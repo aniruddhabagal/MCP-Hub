@@ -203,21 +203,21 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Backend tests for server CRUD and health prober
 
 ### Week 3 — Proxy + Alerts
-- [ ] MCP transparent proxy (`app/routers/proxy.py`)
-- [ ] Tool Call Logger (writes `tool_calls` rows via proxy)
-- [ ] `POST /tool-calls` direct ingestion endpoint
-- [ ] Alert Rules CRUD (`/alerts/rules`)
-- [ ] Alert Evaluator agent (`app/agents/alert_evaluator.py`)
-- [ ] `POST /admin/evaluate-alerts` endpoint
-- [ ] `notifiers.py` (Slack webhook + generic webhook)
-- [ ] Backend tests for proxy and alert evaluator
+- [x] MCP transparent proxy (`app/routers/proxy.py`)
+- [x] Tool Call Logger (writes `tool_calls` rows via proxy)
+- [x] `POST /tool-calls` direct ingestion endpoint
+- [x] Alert Rules CRUD (`/alerts/rules`)
+- [x] Alert Evaluator agent (`app/agents/alert_evaluator.py`)
+- [x] `POST /admin/evaluate-alerts` endpoint
+- [x] `notifiers.py` (Slack webhook + generic webhook)
+- [x] Backend tests for proxy and alert evaluator
 
 ### Week 4 — Analytics
 - [ ] Analytics Aggregator agent (`app/agents/analytics_aggregator.py`)
 - [ ] Vercel Cron config for daily aggregation
 - [ ] Analytics API endpoints (`/analytics/*`)
 - [ ] Redis caching layer for analytics responses
-- [ ] Alert events API (`/alerts/events`)
+- [x] Alert events API (`/alerts/events`)
 
 ### Week 5 — Frontend Foundation
 - [ ] Next.js 14 scaffold with Tailwind + shadcn/ui
