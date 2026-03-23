@@ -188,10 +188,10 @@ The **Progress** section below must be updated as each feature is completed. Mar
 ## Progress
 
 ### Week 1 — Foundation
-- [ ] Docker Compose stack (postgres, redis, backend, frontend)
-- [ ] `.env.example` and config wiring
-- [ ] FastAPI app skeleton (`main.py`, `config.py`, `database.py`, `redis_client.py`)
-- [ ] Alembic setup + initial migration (all 6 tables)
+- [x] Docker Compose stack (postgres, redis, backend, frontend)
+- [x] `.env.example` and config wiring
+- [x] FastAPI app skeleton (`main.py`, `config.py`, `database.py`, `redis_client.py`)
+- [x] Alembic setup + initial migration (all 6 tables)
 
 ### Week 2 — Server Registry + Health Prober
 - [ ] `mcp_servers` ORM model + Pydantic schemas
