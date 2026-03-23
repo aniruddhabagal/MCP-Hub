@@ -194,13 +194,13 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Alembic setup + initial migration (all 6 tables)
 
 ### Week 2 — Server Registry + Health Prober
-- [ ] `mcp_servers` ORM model + Pydantic schemas
-- [ ] Server Registry CRUD API (`GET/POST/PATCH/DELETE /servers`)
-- [ ] `mcp_client.py` — async HTTP MCP probe utility
-- [ ] Health Prober agent (`app/agents/health_prober.py`)
-- [ ] `POST /admin/probe-all` endpoint
-- [ ] Health API (`/health/checks`, `/health/summary`)
-- [ ] Backend tests for server CRUD and health prober
+- [x] `mcp_servers` ORM model + Pydantic schemas
+- [x] Server Registry CRUD API (`GET/POST/PATCH/DELETE /servers`)
+- [x] `mcp_client.py` — async HTTP MCP probe utility
+- [x] Health Prober agent (`app/agents/health_prober.py`)
+- [x] `POST /admin/probe-all` endpoint
+- [x] Health API (`/health/checks`, `/health/summary`)
+- [x] Backend tests for server CRUD and health prober
 
 ### Week 3 — Proxy + Alerts
 - [ ] MCP transparent proxy (`app/routers/proxy.py`)
