@@ -340,11 +340,33 @@ Redis Streams used (not plain pub/sub) for the queue role because they support c
 
 ---
 
+## Deployment (Free Tier)
+
+| Component | Service |
+|---|---|
+| Frontend + Backend | Vercel |
+| PostgreSQL | Neon (Vercel native integration) |
+| Redis | Upstash (Vercel native integration) |
+| Analytics cron | Vercel Cron (once/day, Hobby limit) |
+
+**Agent execution on Vercel free tier:**
+Vercel Hobby cron runs at most once per day — too slow for health probing and alert evaluation. Instead, expose these as manual trigger endpoints:
+- `POST /api/v1/admin/probe-all` — runs all health probes on demand
+- `POST /api/v1/admin/evaluate-alerts` — runs alert rule evaluation on demand
+
+A "Run Probes" button in the dashboard UI calls these endpoints directly. The architecture is identical; the trigger is a button click instead of a scheduler. This is sufficient for a portfolio/resume demo.
+
+The analytics aggregator runs via Vercel Cron (`0 2 * * *`) — once daily is appropriate for analytics snapshots.
+
+**Note:** Because Vercel deploys FastAPI as serverless functions, the `asyncio` lifespan-based background tasks are removed. The agents become stateless functions called via HTTP.
+
+---
+
 ## Key Architectural Decisions
 
 **Proxy-based interception (not SDK instrumentation)** — Zero changes required to existing MCP servers. Any team can route through `mcphub.internal/proxy/{server_id}/mcp`. SDK ingestion endpoint is an escape hatch.
 
-**asyncio tasks instead of Celery** — Health prober and alert evaluator are low-throughput. Celery adds a broker + workers + Flower for tasks that `asyncio.create_task` handles cleanly. Redis Streams add the durability guarantee.
+**Serverless-compatible agents (no asyncio background loops)** — Deployed on Vercel serverless functions, agents are invoked via HTTP endpoints rather than long-running tasks. Health prober and alert evaluator are triggered on demand via dashboard UI buttons; analytics aggregator runs via Vercel Cron daily.
 
 **Pre-aggregated analytics snapshots** — Raw `tool_calls` grows to millions of rows. Hourly snapshots reduce analytics queries to ≤720 rows per server per month, keeping the dashboard fast without a columnar DB.
 
