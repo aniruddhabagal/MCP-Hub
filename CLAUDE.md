@@ -213,10 +213,10 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Backend tests for proxy and alert evaluator
 
 ### Week 4 — Analytics
-- [ ] Analytics Aggregator agent (`app/agents/analytics_aggregator.py`)
-- [ ] Vercel Cron config for daily aggregation
-- [ ] Analytics API endpoints (`/analytics/*`)
-- [ ] Redis caching layer for analytics responses
+- [x] Analytics Aggregator agent (`app/agents/analytics_aggregator.py`)
+- [x] Vercel Cron config for daily aggregation
+- [x] Analytics API endpoints (`/analytics/*`)
+- [x] Redis caching layer for analytics responses
 - [x] Alert events API (`/alerts/events`)
 
 ### Week 5 — Frontend Foundation

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.alert_evaluator import run_evaluate_alerts
+from app.agents.analytics_aggregator import run_aggregate_analytics
 from app.agents.health_prober import run_probe_all
 from app.config import settings
 from app.database import get_db
@@ -31,3 +32,12 @@ async def evaluate_alerts(
 ):
     results = await run_evaluate_alerts(db)
     return {"evaluated": len(results), "results": results}
+
+
+@router.post("/aggregate-analytics")
+async def aggregate_analytics(
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(_verify_cron),
+):
+    result = await run_aggregate_analytics(db)
+    return result
