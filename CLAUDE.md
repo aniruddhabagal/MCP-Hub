@@ -160,6 +160,23 @@ fix: <short description>
 chore: <short description>
 ```
 
+### Model Selection
+
+Choose the model based on task complexity:
+
+| Task type | Model |
+|---|---|
+| Simple edits, refactors, small bug fixes | Haiku |
+| Normal coding tasks (new features, API endpoints, components) | Sonnet |
+| Very heavy or comprehensive tasks (full system design, complex multi-file refactors, architecture changes) | Opus |
+
+### Frontend Development
+
+When implementing a major frontend feature (new page, significant UI component, or visual overhaul), invoke the `frontend-design` skill to ensure production-grade, polished output:
+```
+/frontend-design
+```
+
 ### Progress Tracking
 The **Progress** section below must be updated as each feature is completed. Mark items with:
 - `[ ]` — not started
