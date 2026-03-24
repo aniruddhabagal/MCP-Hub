@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.redis_client import close_redis, get_redis
-from app.routers import admin, alerts, analytics, health, proxy, servers, tool_calls
+from app.routers import admin, alerts, analytics, health, proxy, servers, tool_calls, websocket
 
 
 @asynccontextmanager
@@ -42,6 +42,7 @@ app.include_router(proxy.router, prefix=API_PREFIX)
 app.include_router(tool_calls.router, prefix=API_PREFIX)
 app.include_router(alerts.router, prefix=API_PREFIX)
 app.include_router(analytics.router, prefix=API_PREFIX)
+app.include_router(websocket.router)  # /ws/dashboard — no API prefix
 
 
 @app.get("/health")

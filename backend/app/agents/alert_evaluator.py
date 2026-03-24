@@ -7,6 +7,8 @@ changes.
 
 Invoked on-demand via POST /api/v1/admin/evaluate-alerts.
 """
+import json
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -16,7 +18,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alert import AlertEvent, AlertRule
 from app.models.health_check import HealthCheck
 from app.models.server import MCPServer
+from app.redis_client import get_redis
 from app.utils.notifiers import notify_alert_fired, notify_alert_resolved
+
+logger = logging.getLogger(__name__)
+CHANNEL = "mcphub:dashboard"
+
+
+async def _publish_alert_event(state: str, rule_name: str, message: str, rule_id: str, server_id: str | None) -> None:
+    try:
+        redis = await get_redis()
+        payload = json.dumps({
+            "type": "alert_event",
+            "state": state,
+            "rule_name": rule_name,
+            "message": message,
+            "rule_id": rule_id,
+            "server_id": server_id,
+        })
+        await redis.publish(CHANNEL, payload)
+    except Exception as exc:
+        logger.warning("Failed to publish alert_event: %s", exc)
 
 
 # ── Metric computation ────────────────────────────────────────────────────────
@@ -113,21 +135,24 @@ async def _evaluate_rule(rule: AlertRule, db: AsyncSession) -> dict:
         )
         db.add(event)
         await notify_alert_fired(rule.name, sname, rule.metric, value, rule.threshold)
+        await _publish_alert_event("fired", rule.name, msg, str(rule.id), str(rule.server_id) if rule.server_id else None)
         return {"rule_id": str(rule.id), "rule_name": rule.name, "state": "fired", "value": value}
 
     if not firing and last_state == "fired":
+        resolved_msg = f"{rule.metric} back within threshold ({value:.2f})"
         event = AlertEvent(
             id=uuid.uuid4(),
             rule_id=rule.id,
             server_id=rule.server_id,
             state="resolved",
             value=value,
-            message=f"{rule.metric} back within threshold ({value:.2f})",
+            message=resolved_msg,
             fired_at=now,
             resolved_at=now,
         )
         db.add(event)
         await notify_alert_resolved(rule.name, sname, rule.metric)
+        await _publish_alert_event("resolved", rule.name, resolved_msg, str(rule.id), str(rule.server_id) if rule.server_id else None)
         return {"rule_id": str(rule.id), "rule_name": rule.name, "state": "resolved", "value": value}
 
     return {"rule_id": str(rule.id), "rule_name": rule.name, "state": last_state or "ok", "value": value}
