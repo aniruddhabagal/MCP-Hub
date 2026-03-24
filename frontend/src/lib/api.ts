@@ -100,11 +100,11 @@ export interface ToolCallsParams {
   size?: number
 }
 
-export async function getToolCalls({ status: _status, server_id, page = 1, size = 25 }: ToolCallsParams = {}): Promise<PaginatedResponse<ToolCall>> {
+export async function getToolCalls({ status, server_id, page = 1, size = 25 }: ToolCallsParams = {}): Promise<PaginatedResponse<ToolCall>> {
   const offset = (page - 1) * size
   // Fetch one extra to detect if there are more pages
   const raw = await apiFetch<ToolCall[]>('/tool-calls', {
-    params: { server_id, offset, limit: size + 1 },
+    params: { server_id, status, offset, limit: size + 1 },
   })
   const hasMore = raw.length > size
   const items = raw.slice(0, size)

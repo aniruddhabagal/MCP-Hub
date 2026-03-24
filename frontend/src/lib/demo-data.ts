@@ -141,11 +141,6 @@ export const DEMO_HEALTH_CHECKS: Record<string, HealthCheck[]> = {
 
 // ── Tool Calls (50 total) ─────────────────────────────────────────────────────
 
-const TOOL_NAMES = [
-  'read_file', 'search_issues', 'send_message', 'create_ticket',
-  'get_page', 'update_status', 'list_channels', 'run_query',
-  'search_repos', 'post_comment', 'get_user', 'list_sprints',
-]
 const CALLERS = ['claude-3-5-sonnet', 'claude-3-haiku', 'gpt-4o', 'agent-pipeline-v2']
 const SERVER_TOOL_MAP: Record<string, string[]> = {
   'demo-srv-001': ['read_file', 'search_repos', 'post_comment'],

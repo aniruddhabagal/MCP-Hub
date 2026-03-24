@@ -39,15 +39,15 @@ export function AlertRulesTable() {
   const serversMap = new Map((servers ?? []).map((s) => [s.id, s]))
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <Table>
+    <div className="rounded-lg border border-border overflow-x-auto">
+      <Table className="min-w-[480px]">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead>Rule</TableHead>
-            <TableHead>Scope</TableHead>
+            <TableHead className="hidden sm:table-cell">Scope</TableHead>
             <TableHead>Condition</TableHead>
-            <TableHead>Window</TableHead>
-            <TableHead>Created</TableHead>
+            <TableHead className="hidden md:table-cell">Window</TableHead>
+            <TableHead className="hidden md:table-cell">Created</TableHead>
             <TableHead>Enabled</TableHead>
             <TableHead className="w-20" />
           </TableRow>
@@ -56,7 +56,7 @@ export function AlertRulesTable() {
           {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => (
               <TableRow key={i}>
-                {Array.from({ length: 7 }).map((_, j) => (
+                {Array.from({ length: 4 }).map((_, j) => (
                   <TableCell key={j}>
                     <Skeleton className="h-4 w-full" />
                   </TableCell>
@@ -80,7 +80,7 @@ export function AlertRulesTable() {
                   <TableCell>
                     <p className="font-medium text-foreground text-sm">{rule.name}</p>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <span className="text-xs font-mono text-muted-foreground">
                       {serverName ?? 'Global'}
                     </span>
@@ -96,12 +96,12 @@ export function AlertRulesTable() {
                       <span className="text-primary tabular-nums">{rule.threshold}</span>
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <span className="text-xs font-mono text-muted-foreground tabular-nums">
                       {rule.window_minutes}m
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <span className="text-xs font-mono text-muted-foreground">
                       {formatRelativeTime(rule.created_at)}
                     </span>

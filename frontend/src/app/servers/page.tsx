@@ -1,6 +1,5 @@
 'use client'
 
-import { Server } from 'lucide-react'
 import { RegisterServerModal } from '@/components/servers/RegisterServerModal'
 import { ServerTable } from '@/components/servers/ServerTable'
 import { useServers } from '@/lib/hooks'
@@ -9,9 +8,9 @@ export default function ServersPage() {
   const { data: servers } = useServers()
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
+    <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <h1 className="font-serif italic text-3xl text-foreground tracking-tight">
             Servers

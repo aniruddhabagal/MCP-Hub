@@ -8,10 +8,6 @@ import { Grid3X3 } from 'lucide-react'
 
 const HOUR_RANGE_OPTIONS = [24, 48, 168] // 24h, 48h, 7d
 
-function formatHour(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-}
 
 function formatBucketLabel(dateStr: string, hours: number) {
   const d = new Date(dateStr)

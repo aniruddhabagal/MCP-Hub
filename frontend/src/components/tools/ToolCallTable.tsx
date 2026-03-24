@@ -10,7 +10,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -97,16 +96,16 @@ export function ToolCallTable() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border border-border overflow-hidden">
-        <Table>
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <Table className="min-w-[480px]">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead>Tool</TableHead>
-              <TableHead>Server</TableHead>
-              <TableHead>Caller</TableHead>
+              <TableHead className="hidden sm:table-cell">Server</TableHead>
+              <TableHead className="hidden md:table-cell">Caller</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Duration</TableHead>
-              <TableHead>Output Size</TableHead>
+              <TableHead className="hidden md:table-cell">Output Size</TableHead>
               <TableHead>Called At</TableHead>
             </TableRow>
           </TableHeader>
@@ -114,7 +113,7 @@ export function ToolCallTable() {
             {isLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
+                  {Array.from({ length: 5 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -144,12 +143,12 @@ export function ToolCallTable() {
                         {tc.tool_name}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <span className="text-xs font-mono text-muted-foreground">
                         {serverName ?? tc.server_id.slice(0, 8) + '…'}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <span className="text-xs font-mono text-muted-foreground">
                         {tc.caller_agent ?? '—'}
                       </span>
@@ -172,7 +171,7 @@ export function ToolCallTable() {
                         {formatLatency(tc.duration_ms)}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <span className="font-mono text-xs text-muted-foreground tabular-nums">
                         {tc.output_size_bytes != null
                           ? `${(tc.output_size_bytes / 1024).toFixed(1)} KB`

@@ -43,7 +43,7 @@ export default function ServerDetailPage({
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
+      <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-64 w-full" />
@@ -57,7 +57,7 @@ export default function ServerDetailPage({
   const serverAlerts = (alertEvents ?? []).filter((e) => e.server_id === id)
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
+    <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
       {/* Back nav + header */}
       <div>
         <Link
@@ -67,7 +67,7 @@ export default function ServerDetailPage({
           <ArrowLeft className="w-3.5 h-3.5" /> Back to servers
         </Link>
 
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="font-serif italic text-3xl text-foreground tracking-tight">
@@ -226,15 +226,15 @@ export default function ServerDetailPage({
         </TabsList>
 
         <TabsContent value="tool-calls" className="mt-4">
-          <div className="rounded-lg border border-border overflow-hidden">
-            <Table>
+          <div className="rounded-lg border border-border overflow-x-auto">
+            <Table className="min-w-[420px]">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Tool</TableHead>
-                  <TableHead>Caller</TableHead>
+                  <TableHead className="hidden sm:table-cell">Caller</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Output</TableHead>
+                  <TableHead className="hidden sm:table-cell">Duration</TableHead>
+                  <TableHead className="hidden md:table-cell">Output</TableHead>
                   <TableHead>Called At</TableHead>
                 </TableRow>
               </TableHeader>
@@ -249,7 +249,7 @@ export default function ServerDetailPage({
                   toolCalls.items.map((tc) => (
                     <TableRow key={tc.id}>
                       <TableCell className="font-mono text-sm">{tc.tool_name}</TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="hidden sm:table-cell font-mono text-xs text-muted-foreground">
                         {tc.caller_agent ?? '—'}
                       </TableCell>
                       <TableCell>
@@ -261,10 +261,10 @@ export default function ServerDetailPage({
                           {tc.status}
                         </span>
                       </TableCell>
-                      <TableCell className="font-mono text-sm tabular-nums">
+                      <TableCell className="hidden sm:table-cell font-mono text-sm tabular-nums">
                         {formatLatency(tc.duration_ms)}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="hidden md:table-cell font-mono text-xs text-muted-foreground">
                         {tc.output_size_bytes != null
                           ? `${(tc.output_size_bytes / 1024).toFixed(1)} KB`
                           : '—'}
@@ -281,15 +281,15 @@ export default function ServerDetailPage({
         </TabsContent>
 
         <TabsContent value="alerts" className="mt-4">
-          <div className="rounded-lg border border-border overflow-hidden">
-            <Table>
+          <div className="rounded-lg border border-border overflow-x-auto">
+            <Table className="min-w-[380px]">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>State</TableHead>
                   <TableHead>Message</TableHead>
-                  <TableHead>Value</TableHead>
+                  <TableHead className="hidden md:table-cell">Value</TableHead>
                   <TableHead>Fired At</TableHead>
-                  <TableHead>Resolved At</TableHead>
+                  <TableHead className="hidden sm:table-cell">Resolved At</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -316,16 +316,16 @@ export default function ServerDetailPage({
                           {ev.state}
                         </span>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                         {ev.message ?? '—'}
                       </TableCell>
-                      <TableCell className="font-mono text-sm tabular-nums">
+                      <TableCell className="hidden md:table-cell font-mono text-sm tabular-nums">
                         {ev.value != null ? ev.value.toFixed(3) : '—'}
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {formatDateTime(ev.fired_at)}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="hidden sm:table-cell font-mono text-xs text-muted-foreground">
                         {ev.resolved_at ? formatDateTime(ev.resolved_at) : '—'}
                       </TableCell>
                     </TableRow>

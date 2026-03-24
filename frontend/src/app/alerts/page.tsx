@@ -13,9 +13,9 @@ export default function AlertsPage() {
   const firingCount = events?.length ?? 0
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto space-y-8 animate-fade-in">
+    <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <h1 className="font-serif italic text-3xl text-foreground tracking-tight">
             Alerts
@@ -30,7 +30,7 @@ export default function AlertsPage() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button
             variant="outline"
             size="sm"

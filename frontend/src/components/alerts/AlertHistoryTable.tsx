@@ -56,23 +56,23 @@ export function AlertHistoryTable() {
         )}
       </div>
 
-      <div className="rounded-lg border border-border overflow-hidden">
-        <Table>
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <Table className="min-w-[440px]">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead>State</TableHead>
               <TableHead>Rule</TableHead>
-              <TableHead>Server</TableHead>
-              <TableHead>Value</TableHead>
+              <TableHead className="hidden sm:table-cell">Server</TableHead>
+              <TableHead className="hidden md:table-cell">Value</TableHead>
               <TableHead>Fired At</TableHead>
-              <TableHead>Resolved At</TableHead>
+              <TableHead className="hidden sm:table-cell">Resolved At</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 6 }).map((_, j) => (
+                  {Array.from({ length: 4 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -121,12 +121,12 @@ export function AlertHistoryTable() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <span className="text-xs font-mono text-muted-foreground">
                         {serverName ?? (ev.server_id ? ev.server_id.slice(0, 8) + '…' : 'Global')}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <span className="font-mono text-sm tabular-nums">
                         {ev.value != null ? ev.value.toFixed(4) : '—'}
                       </span>
@@ -136,7 +136,7 @@ export function AlertHistoryTable() {
                         {formatRelativeTime(ev.fired_at)}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <span className="font-mono text-xs text-muted-foreground">
                         {ev.resolved_at ? (
                           <span title={formatDateTime(ev.resolved_at)}>

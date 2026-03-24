@@ -7,7 +7,7 @@ import { ErrorRatesChart } from '@/components/analytics/ErrorRatesChart'
 
 export default function AnalyticsPage() {
   return (
-    <div className="p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
+    <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
       <div>
         <h1 className="font-serif italic text-3xl text-foreground tracking-tight">
           Analytics

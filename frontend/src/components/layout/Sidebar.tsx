@@ -8,6 +8,7 @@ import {
   BarChart3,
   LayoutDashboard,
   Server,
+  X,
   Zap,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -24,24 +25,46 @@ const navItems = [
   { href: '/alerts', label: 'Alerts', icon: AlertTriangle },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean
+  onMobileClose?: () => void
+}
+
+export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const { connectionState } = useWebSocket()
   const demo = useDemoMode()
   const queryClient = useQueryClient()
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-56 border-r border-border bg-surface flex flex-col z-40">
+    <aside
+      className={cn(
+        'fixed left-0 top-0 h-screen w-56 border-r border-border bg-surface flex flex-col z-40 transition-transform duration-200',
+        // Desktop: always visible. Mobile: slide in/out.
+        'md:translate-x-0',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full'
+      )}
+    >
       {/* Wordmark */}
       <div className="px-5 pt-6 pb-5 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          {/* Icon mark */}
-          <div className="w-7 h-7 rounded border border-primary/40 bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <Activity className="w-3.5 h-3.5 text-primary" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            {/* Icon mark */}
+            <div className="w-7 h-7 rounded border border-primary/40 bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Activity className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <span className="font-serif italic text-[1.15rem] text-foreground tracking-tight">
+              MCPHub
+            </span>
           </div>
-          <span className="font-serif italic text-[1.15rem] text-foreground tracking-tight">
-            MCPHub
-          </span>
+          {/* Mobile close button */}
+          <button
+            onClick={onMobileClose}
+            className="md:hidden p-1 -mr-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Close navigation"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
         <p className="text-[9px] font-mono text-muted-foreground mt-1.5 ml-9 uppercase tracking-[0.2em]">
           Monitor v0.1
@@ -59,6 +82,7 @@ export function Sidebar() {
             <Link
               key={href}
               href={href}
+              onClick={onMobileClose}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded text-sm transition-all duration-150 group',
                 active

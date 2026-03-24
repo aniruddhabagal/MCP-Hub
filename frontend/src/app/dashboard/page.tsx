@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Activity, RefreshCw } from 'lucide-react'
+import { Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCards } from '@/components/dashboard/StatsCards'
 import { HealthOverviewChart } from '@/components/dashboard/HealthOverviewChart'
@@ -23,9 +23,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
+    <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <h1 className="font-serif italic text-3xl text-foreground tracking-tight">
             Dashboard

@@ -102,9 +102,6 @@ export function LatencyHistogram() {
               >
                 {data.map((entry, index) => {
                   const ratio = (entry.avg_latency_ms ?? 0) / p95Max
-                  const r = Math.round(ratio * 239)
-                  const g = Math.round((1 - ratio) * 86 + ratio * 68)
-                  const b = Math.round((1 - ratio) * 68 + ratio * 68)
                   return (
                     <Cell
                       key={`cell-${index}`}

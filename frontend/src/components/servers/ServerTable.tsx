@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Activity, ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Activity, ExternalLink, Trash2 } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -93,24 +93,24 @@ export function ServerTable() {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border overflow-hidden">
-        <Table>
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow>
               <TableHead>Server</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Endpoint</TableHead>
-              <TableHead>Latency</TableHead>
+              <TableHead className="hidden md:table-cell">Endpoint</TableHead>
+              <TableHead className="hidden sm:table-cell">Latency</TableHead>
               <TableHead>Uptime</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead>Updated</TableHead>
+              <TableHead className="hidden md:table-cell">Owner</TableHead>
+              <TableHead className="hidden md:table-cell">Updated</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.from({ length: 5 }).map((_, i) => (
               <TableRow key={i}>
-                {Array.from({ length: 7 }).map((_, j) => (
+                {Array.from({ length: 5 }).map((_, j) => (
                   <TableCell key={j}>
                     <Skeleton className="h-4 w-full" />
                   </TableCell>
@@ -139,17 +139,17 @@ export function ServerTable() {
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <Table>
+    <div className="rounded-lg border border-border overflow-x-auto">
+      <Table className="min-w-[500px]">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead>Server</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Endpoint</TableHead>
-            <TableHead>Avg Latency</TableHead>
+            <TableHead className="hidden md:table-cell">Endpoint</TableHead>
+            <TableHead className="hidden sm:table-cell">Avg Latency</TableHead>
             <TableHead>Uptime</TableHead>
-            <TableHead>Owner</TableHead>
-            <TableHead>Updated</TableHead>
+            <TableHead className="hidden md:table-cell">Owner</TableHead>
+            <TableHead className="hidden md:table-cell">Updated</TableHead>
             <TableHead className="w-28" />
           </TableRow>
         </TableHeader>
@@ -164,12 +164,12 @@ export function ServerTable() {
                       {server.name}
                     </Link>
                     {server.description && (
-                      <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate max-w-[200px]">
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate max-w-[200px] hidden sm:block">
                         {server.description}
                       </p>
                     )}
                     {server.tags && server.tags.length > 0 && (
-                      <div className="flex gap-1 mt-1 flex-wrap">
+                      <div className="hidden sm:flex gap-1 mt-1 flex-wrap">
                         {server.tags.slice(0, 3).map((tag) => (
                           <span
                             key={tag}
@@ -185,12 +185,12 @@ export function ServerTable() {
                 <TableCell>
                   <StatusBadge status={server.status} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   <span className="text-xs font-mono text-muted-foreground truncate max-w-[180px] block">
                     {server.endpoint}
                   </span>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   <span className="font-mono text-sm">
                     {formatLatency(health?.avg_latency_ms)}
                   </span>
@@ -222,12 +222,12 @@ export function ServerTable() {
                     </span>
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   <span className="text-sm text-muted-foreground font-mono">
                     {server.owner ?? '—'}
                   </span>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   <span className="text-xs font-mono text-muted-foreground">
                     {formatRelativeTime(server.updated_at)}
                   </span>

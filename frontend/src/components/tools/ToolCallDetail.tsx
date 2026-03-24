@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Clock, Zap, User, Server, AlertCircle, CheckCircle } from 'lucide-react'
+import { X, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatLatency, formatDateTime } from '@/lib/utils'
 import type { ToolCall } from '@/lib/types'

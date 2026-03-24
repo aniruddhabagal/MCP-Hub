@@ -41,10 +41,10 @@ export function DemoBanner() {
   }
 
   return (
-    <div className="flex items-center justify-between px-5 py-2 bg-amber-500/10 border-b border-amber-500/20">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between px-4 md:px-5 py-2 bg-amber-500/10 border-b border-amber-500/20 gap-3">
+      <div className="flex items-center gap-2 min-w-0">
         <Info className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-        <span className="text-xs font-mono text-amber-300">
+        <span className="text-xs font-mono text-amber-300 truncate">
           {isManual
             ? 'Demo mode — viewing sample data'
             : 'Live demo — backend not connected'}
