@@ -23,13 +23,75 @@ const instrumentSerif = Instrument_Serif({
   variable: '--font-instrument-serif',
 })
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mcphub.vercel.app'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: 'MCPHub — MCP Server Monitor',
     template: '%s · MCPHub',
   },
   description:
     'The ops layer MCP was missing. Discover, monitor health, track tool calls, and audit analytics across all MCP servers.',
+  keywords: [
+    'MCP',
+    'Model Context Protocol',
+    'MCP server',
+    'MCP monitoring',
+    'MCP dashboard',
+    'AI tool calls',
+    'server health monitor',
+    'ops dashboard',
+    'LLM tooling',
+    'agent observability',
+  ],
+  authors: [{ name: 'Aniruddha Bagal', url: 'https://aniruddha.fyi' }],
+  creator: 'Aniruddha Bagal',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: siteUrl,
+    siteName: 'MCPHub',
+    title: 'MCPHub — MCP Server Monitor',
+    description:
+      'The ops layer MCP was missing. Monitor, audit, alert, and discover across all MCP servers in one dashboard.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'MCPHub — MCP Server Registry, Health Monitor & Dashboard',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MCPHub — MCP Server Monitor',
+    description:
+      'The ops layer MCP was missing. Monitor, audit, alert, and discover across all MCP servers.',
+    images: ['/twitter-card.png'],
+  },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/icon-16.png', type: 'image/png', sizes: '16x16' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: '/favicon.ico',
+  },
+  manifest: '/site.webmanifest',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 }
 
 export default function RootLayout({
