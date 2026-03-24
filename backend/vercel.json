@@ -10,5 +10,11 @@
       "src": "/(.*)",
       "dest": "app/main.py"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/v1/admin/aggregate-analytics",
+      "schedule": "0 2 * * *"
+    }
   ]
 }
