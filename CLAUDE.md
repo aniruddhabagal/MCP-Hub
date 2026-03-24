@@ -220,11 +220,11 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Alert events API (`/alerts/events`)
 
 ### Week 5 — Frontend Foundation
-- [ ] Next.js 14 scaffold with Tailwind + shadcn/ui
-- [ ] Sidebar + layout shell
-- [ ] Typed API client (`lib/api.ts`) + shared types (`lib/types.ts`)
-- [ ] Dashboard page (StatsCards, HealthOverviewChart, RecentAlerts)
-- [ ] Server Registry page (ServerTable, RegisterServerModal)
+- [x] Next.js 14 scaffold with Tailwind + shadcn/ui
+- [x] Sidebar + layout shell
+- [x] Typed API client (`lib/api.ts`) + shared types (`lib/types.ts`)
+- [x] Dashboard page (StatsCards, HealthOverviewChart, RecentAlerts)
+- [x] Server Registry page (ServerTable, RegisterServerModal)
 
 ### Week 6 — Frontend Pages
 - [ ] Server Detail page (HealthTimeline, UptimeCalendar, tabs)

@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Forge Dark — industrial monitoring palette */
+
+    /* Backgrounds — layered near-black with cool blue undertone */
+    --background: 240 12% 5%;       /* #0c0c0f */
+    --surface: 240 12% 8%;          /* #111118 */
+    --card: 240 10% 11%;            /* #1a1a22 */
+
+    --foreground: 240 10% 92%;      /* #e8e8f0 */
+    --card-foreground: 240 10% 92%;
+
+    --popover: 240 10% 11%;
+    --popover-foreground: 240 10% 92%;
+
+    /* Amber — the accent. Like a server status LED. */
+    --primary: 38 92% 50%;          /* #f59e0b */
+    --primary-foreground: 240 12% 5%;
+
+    --secondary: 240 10% 14%;
+    --secondary-foreground: 240 10% 75%;
+
+    --muted: 240 10% 14%;
+    --muted-foreground: 240 8% 52%;
+
+    --accent: 38 92% 50%;
+    --accent-foreground: 240 12% 5%;
+
+    --destructive: 0 78% 58%;
+    --destructive-foreground: 240 10% 92%;
+
+    --border: 240 10% 18%;
+    --input: 240 10% 18%;
+    --ring: 38 92% 50%;
+
+    --radius: 0.375rem;
+
+    /* Status colors */
+    --status-healthy: 142 71% 45%;  /* #22c55e */
+    --status-error: 0 78% 58%;      /* #ef4444 */
+    --status-warning: 45 93% 47%;   /* #eab308 */
+    --status-unknown: 240 8% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(38 92% 50% / 0.04), transparent),
+      url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 40L40 0M-5 5L5 -5M35 45L45 35' stroke='%23ffffff' stroke-width='0.3' opacity='0.025'/%3E%3C/svg%3E");
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+@layer utilities {
+  .font-mono-data {
+    @apply font-mono text-sm tabular-nums tracking-tight;
+  }
+
+  .status-dot {
+    @apply w-2 h-2 rounded-full inline-block flex-shrink-0;
+  }
+
+  .status-dot-healthy {
+    @apply status-dot bg-status-healthy animate-pulse-dot;
+  }
+
+  .status-dot-error {
+    @apply status-dot bg-status-error animate-pulse-dot;
+  }
+
+  .status-dot-warning {
+    @apply status-dot bg-status-warning;
+  }
+
+  .status-dot-unknown {
+    @apply status-dot bg-status-unknown;
+  }
+
+  .card-glow {
+    box-shadow: 0 0 0 1px hsl(var(--border)), 0 4px 24px -4px hsl(240 12% 3% / 0.8);
+  }
+
+  .accent-glow {
+    box-shadow: 0 0 0 1px hsl(38 92% 50% / 0.3), 0 4px 16px -4px hsl(38 92% 50% / 0.2);
+  }
+}
