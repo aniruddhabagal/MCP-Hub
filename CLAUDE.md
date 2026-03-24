@@ -233,12 +233,12 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Alerts page (AlertRuleForm, AlertHistoryTable)
 
 ### Week 7 — Real-Time + Polish
-- [ ] WebSocket backend handler (`/ws/dashboard`)
-- [ ] WebSocket frontend integration (live status dots, alert toasts)
-- [ ] "Run Probes" button wired to `POST /admin/probe-all`
-- [ ] E2E tests (Playwright)
-- [ ] Deploy to Vercel + Neon + Upstash
-- [ ] README
+- [x] WebSocket backend handler (`/ws/dashboard`)
+- [x] WebSocket frontend integration (live status dots, alert toasts)
+- [x] "Run Probes" button wired to `POST /admin/probe-all`
+- [x] E2E tests (Playwright)
+- [x] Deploy to Vercel + Neon + Upstash
+- [x] README
 
 ---
 
