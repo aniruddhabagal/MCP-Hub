@@ -62,6 +62,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
+    command: sh -c "npm install && npm run dev"
 
 volumes:
   postgres_data:
