@@ -1,208 +1,303 @@
-# MCPHub
+# 🛰️ MCPHub
 
-> Central ops dashboard for teams running multiple MCP servers. Grafana for your MCP layer.
+> **Grafana for your MCP layer.** The central ops dashboard that teams running multiple MCP servers are missing.
 
-MCP went from zero to ubiquitous in under a year. Teams now run 10–20 MCP servers with no visibility into which are slow, which fail silently, or which tools are called most. MCPHub is the missing management layer.
+MCP went from zero to ubiquitous in under a year. Teams now run 10–20 MCP servers with **zero visibility** into which are slow, which fail silently, or which tools are called most. MCPHub is the missing management layer — a single pane of glass for discovery, health monitoring, auditing, analytics, and alerting across your entire MCP infrastructure.
 
----
+<br/>
 
-## What It Does
+## ✨ Features
 
-- **Server Registry** — catalog all MCP servers with metadata, version, owner, and tags
-- **Health Monitoring** — on-demand probes with latency tracking and uptime history
-- **Transparent Proxy** — sits in front of any MCP server; logs every tool call without code changes
-- **Usage Analytics** — top tools by call count, latency histograms, error rates, volume heatmap
-- **Alert System** — threshold-based rules on error rate, latency p95, or availability; Slack/webhook notifications
-- **Real-Time Dashboard** — WebSocket push for live status updates and alert toasts
+| | Feature | Description |
+|---|---|---|
+| 📋 | **Server Registry** | Catalog all MCP servers with metadata, version, owner, and tags |
+| 💓 | **Health Monitoring** | On-demand probes with latency tracking, error rates, and uptime history |
+| 🔀 | **Transparent Proxy** | Sits in front of any MCP server and logs every tool call — zero code changes required |
+| 📊 | **Usage Analytics** | Top tools by call count, latency histograms, error rates, volume heatmap |
+| 🚨 | **Alert System** | Threshold-based rules on error rate, latency, or availability with Slack/webhook delivery |
+| ⚡ | **Real-Time Dashboard** | WebSocket push for live server status and alert toasts |
 
----
+<br/>
 
-## Architecture
+## 🖥️ Screenshots
+
+| Landing Page | Dashboard |
+|---|---|
+| Hero with animated scroll | Server health overview with live stats |
+
+| Server Detail | Analytics |
+|---|---|
+| Health timeline + uptime calendar | Top tools, latency histogram, heatmap |
+
+<br/>
+
+## 🏗️ Architecture
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                     Browser / Client                   │
-│  Next.js 14 · TanStack Query · Recharts · shadcn/ui    │
-└───────────────────────┬────────────────────────────────┘
-                        │ REST + WebSocket
-┌───────────────────────▼────────────────────────────────┐
-│               FastAPI (Vercel serverless)               │
-│  /api/v1/servers   /api/v1/health   /api/v1/tool-calls │
-│  /api/v1/analytics /api/v1/alerts   /api/v1/proxy      │
-│  /api/v1/admin     /ws/dashboard (WebSocket)            │
-└──────────┬───────────────────────────┬─────────────────┘
-           │                           │
-┌──────────▼──────┐         ┌──────────▼──────┐
-│  PostgreSQL     │         │  Redis           │
-│  (Neon)        │         │  (Upstash)       │
-│                 │         │  • Cache (5 min) │
-│  mcp_servers    │         │  • Pub/Sub       │
-│  health_checks  │         │  • WS events     │
-│  tool_calls     │         └─────────────────┘
-│  alert_rules    │
-│  alert_events   │
-│  analytics_snap │
-└─────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                        Browser                              │
+│    Next.js 14 · TanStack Query · Recharts · shadcn/ui       │
+│    Lenis smooth scroll · GSAP animations                    │
+└──────────────────────────┬──────────────────────────────────┘
+                           │  REST + WebSocket
+┌──────────────────────────▼──────────────────────────────────┐
+│              FastAPI  (Vercel Serverless Functions)          │
+│                                                             │
+│  /api/v1/servers      /api/v1/health      /api/v1/proxy     │
+│  /api/v1/tool-calls   /api/v1/analytics   /api/v1/alerts    │
+│  /api/v1/admin        /ws/dashboard  (WebSocket)            │
+└──────────────┬──────────────────────────┬───────────────────┘
+               │                          │
+  ┌────────────▼────────┐    ┌────────────▼────────┐
+  │  PostgreSQL (Neon)  │    │   Redis (Upstash)   │
+  │                     │    │                     │
+  │  mcp_servers        │    │  • 5-min cache TTL  │
+  │  health_checks      │    │  • Pub/Sub events   │
+  │  tool_calls         │    │  • WS fan-out       │
+  │  alert_rules        │    └─────────────────────┘
+  │  alert_events       │
+  │  analytics_snaps    │
+  └─────────────────────┘
 ```
 
----
+<br/>
 
-## Stack
+## 🛠️ Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 14 (App Router), Tailwind CSS, shadcn/ui, Recharts |
-| Backend | Python, FastAPI (serverless functions) |
-| Database | PostgreSQL via Neon |
-| Cache / Pub-Sub | Redis via Upstash |
-| Deployment | Vercel (frontend + backend), Neon, Upstash |
+| **Frontend** | Next.js 14 (App Router), Tailwind CSS, shadcn/ui, Recharts, TanStack Query |
+| **Animations** | GSAP + ScrollTrigger, Lenis smooth scroll |
+| **Backend** | Python 3.12, FastAPI, SQLAlchemy (async), Alembic |
+| **Database** | PostgreSQL 16 via [Neon](https://neon.tech) |
+| **Cache / Queue** | Redis via [Upstash](https://upstash.com) |
+| **Deployment** | [Vercel](https://vercel.com) (frontend + backend), Neon, Upstash |
+| **Tests** | Playwright E2E (frontend), pytest (backend) |
 
----
+<br/>
 
-## Quick Start (Local)
+## 🚀 Quick Start (Local)
 
-**Prerequisites:** Docker, Docker Compose
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/)
 
 ```bash
+# 1. Clone the repo
 git clone https://github.com/your-username/mcphub.git
 cd mcphub
 
-# Copy env and set secrets
+# 2. Copy env file and set required secrets
 cp .env.example .env
 # Edit .env — set SECRET_KEY and CRON_SECRET at minimum
 
-# Start all services
+# 3. Start all services (postgres, redis, backend, frontend)
 docker-compose up
 ```
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API docs: http://localhost:8000/docs
+| Service | URL |
+|---|---|
+| 🌐 Frontend | http://localhost:3000 |
+| ⚙️ Backend API | http://localhost:8000/api/v1 |
+| 📄 API Docs (Swagger) | http://localhost:8000/docs |
 
----
+> 💡 **Installing new packages?** The frontend container runs `npm install` on startup automatically, so your new dependencies are always picked up without rebuilding the image.
 
-## Vercel Deployment
+<br/>
 
-### 1. Deploy the Backend
+## ☁️ Deployment (Vercel + Neon + Upstash)
 
-```bash
-cd backend
-vercel deploy --prod
-# Note the deployment URL, e.g. https://mcphub-api.vercel.app
-```
+For a full step-by-step production deployment guide, see **[Deployment.md](./Deployment.md)**.
 
-Set these environment variables in the Vercel dashboard:
-```
-DATABASE_URL       # Neon connection string (postgresql+asyncpg://...)
-REDIS_URL          # Upstash Redis URL (rediss://...)
-SECRET_KEY         # Random secret string
-CRON_SECRET        # Secret for cron/admin endpoints
-ALLOWED_ORIGINS    # https://your-frontend.vercel.app
-SLACK_WEBHOOK_URL  # Optional: Slack incoming webhook
-```
+**Short version:**
 
-### 2. Deploy the Frontend
+1. **[Neon](https://neon.tech)** → Create a project, copy the **pooled** asyncpg connection string
+2. **[Upstash](https://upstash.com)** → Create a Redis database with TLS, copy the `rediss://` URL
+3. **Vercel Backend** → Import repo, set root directory to `backend`, add env vars, deploy
+4. **Vercel Frontend** → Import repo again, set root directory to `frontend`, point to backend URL, deploy
 
-```bash
-cd frontend
-vercel deploy --prod
-```
+<br/>
 
-Set these environment variables:
-```
-NEXT_PUBLIC_API_URL      # https://mcphub-api.vercel.app/api/v1
-NEXT_PUBLIC_WS_URL       # wss://mcphub-api.vercel.app/ws/dashboard
-NEXT_PUBLIC_CRON_SECRET  # Same value as backend CRON_SECRET
-```
+## 🔑 Environment Variables
 
-### 3. Set up Vercel Cron
-
-Add to `backend/vercel.json` (already included):
-```json
-{
-  "crons": [
-    {
-      "path": "/api/v1/admin/aggregate-analytics",
-      "schedule": "0 2 * * *"
-    }
-  ]
-}
-```
-
----
-
-## Environment Variables
+### Backend
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string (`postgresql+asyncpg://...`) |
-| `REDIS_URL` | Yes | Redis connection string (`redis://...` or `rediss://...`) |
-| `SECRET_KEY` | Yes | App secret key |
-| `CRON_SECRET` | Yes | Bearer token for admin/cron endpoints |
-| `ALLOWED_ORIGINS` | Yes | Comma-separated CORS origins |
-| `APP_ENV` | No | `development` or `production` (default: `development`) |
-| `SLACK_WEBHOOK_URL` | No | Slack incoming webhook for alert notifications |
-| `ALERT_WEBHOOK_URL` | No | Generic webhook for alert notifications |
-| `NEXT_PUBLIC_API_URL` | Yes | Backend API base URL |
-| `NEXT_PUBLIC_WS_URL` | No | WebSocket URL (default: `ws://localhost:8000/ws/dashboard`) |
-| `NEXT_PUBLIC_CRON_SECRET` | Yes | Frontend copy of CRON_SECRET for "Run Probes" button |
+| `DATABASE_URL` | ✅ | Neon asyncpg URL — `postgresql+asyncpg://...?ssl=require` |
+| `REDIS_URL` | ✅ | Upstash Redis URL — `rediss://...` |
+| `SECRET_KEY` | ✅ | Long random string (`openssl rand -hex 32`) |
+| `CRON_SECRET` | ✅ | Bearer token for admin/cron endpoints |
+| `ALLOWED_ORIGINS` | ✅ | Comma-separated CORS origins (your frontend URL) |
+| `APP_ENV` | ☐ | `development` or `production` (default: `development`) |
+| `SLACK_WEBHOOK_URL` | ☐ | Slack incoming webhook for alert notifications |
+| `ALERT_WEBHOOK_URL` | ☐ | Generic HTTP webhook for alert notifications |
 
----
+### Frontend
 
-## API Endpoints
+| Variable | Required | Description |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | ✅ | Backend API base URL — `https://your-backend.vercel.app/api/v1` |
+| `NEXT_PUBLIC_WS_URL` | ✅ | WebSocket URL — `wss://your-backend.vercel.app/ws/dashboard` |
+| `NEXT_PUBLIC_CRON_SECRET` | ✅ | Same value as backend `CRON_SECRET` — powers the "Run Probes" button |
 
-All REST endpoints under `/api/v1`:
+<br/>
 
-| Endpoint | Description |
-|---|---|
-| `GET/POST /servers` | List / register servers |
-| `GET/PATCH/DELETE /servers/{id}` | Server CRUD |
-| `POST /servers/{id}/probe` | Probe a single server |
-| `GET /health/checks` | Paginated health check history |
-| `GET /health/summary` | Uptime stats per server |
-| `GET /tool-calls` | Paginated audit log |
-| `POST /tool-calls` | Direct tool call ingestion |
-| `GET /analytics/top-tools` | Top tools by call count |
-| `GET /analytics/error-rates` | Error rates by server/tool |
-| `GET /analytics/latency` | Avg + p95 latency stats |
-| `GET /analytics/volume` | Volume heatmap buckets |
-| `GET/POST /alerts/rules` | Alert rule CRUD |
-| `GET /alerts/events` | Alert event history |
-| `POST /proxy/{server_id}/mcp` | Transparent MCP proxy |
-| `POST /admin/probe-all` | Probe all servers (auth required) |
-| `POST /admin/evaluate-alerts` | Evaluate all alert rules (auth required) |
-| `WS /ws/dashboard` | Real-time WebSocket stream |
+## 📡 API Reference
 
----
+All REST endpoints are under `/api/v1`:
 
-## E2E Tests
+### Servers
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/servers` | List all registered servers |
+| `POST` | `/servers` | Register a new server |
+| `GET` | `/servers/{id}` | Get server details |
+| `PATCH` | `/servers/{id}` | Update server metadata |
+| `DELETE` | `/servers/{id}` | Remove a server |
+| `POST` | `/servers/{id}/probe` | Probe a single server on-demand |
 
-```bash
-cd frontend
-npx playwright test
-```
+### Health
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health/checks` | Paginated health check history |
+| `GET` | `/health/summary` | Uptime stats per server |
 
-Tests mock API responses and run without a live backend.
+### Tool Calls
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/tool-calls` | Paginated audit log with filters |
+| `POST` | `/tool-calls` | Direct ingestion (bypass proxy) |
+| `POST` | `/proxy/{server_id}/mcp` | Transparent MCP proxy endpoint |
 
----
+### Analytics
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/analytics/top-tools` | Top tools by call count |
+| `GET` | `/analytics/error-rates` | Error rates by server/tool |
+| `GET` | `/analytics/latency` | Avg + p95 latency stats |
+| `GET` | `/analytics/volume` | Volume heatmap time buckets |
 
-## Project Structure
+### Alerts
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/alerts/rules` | List alert rules |
+| `POST` | `/alerts/rules` | Create an alert rule |
+| `PATCH` | `/alerts/rules/{id}` | Update a rule |
+| `DELETE` | `/alerts/rules/{id}` | Delete a rule |
+| `GET` | `/alerts/events` | Alert event history |
+
+### Admin (Auth Required — `Authorization: Bearer CRON_SECRET`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/admin/probe-all` | Run health probes on all servers |
+| `POST` | `/admin/evaluate-alerts` | Evaluate all alert rules |
+| `POST` | `/admin/aggregate-analytics` | Run analytics aggregation (also the daily cron) |
+
+### Real-Time
+| Protocol | Endpoint | Description |
+|---|---|---|
+| `WebSocket` | `/ws/dashboard` | Live server status + alert event stream |
+
+<br/>
+
+## 📁 Project Structure
 
 ```
 mcphub/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py              # FastAPI entry point
-│   │   ├── agents/              # health_prober, alert_evaluator, analytics_aggregator
+│   │   ├── main.py              # FastAPI entry point + lifespan (runs migrations)
+│   │   ├── config.py            # Pydantic settings
+│   │   ├── database.py          # SQLAlchemy async engine
+│   │   ├── redis_client.py      # Redis connection pool
+│   │   ├── agents/              # health_prober · alert_evaluator · analytics_aggregator
 │   │   ├── routers/             # API route handlers + proxy + websocket
 │   │   ├── models/              # SQLAlchemy ORM models
 │   │   ├── schemas/             # Pydantic request/response schemas
-│   │   └── utils/               # mcp_client, notifiers
-│   └── alembic/                 # DB migrations
+│   │   ├── services/            # Business logic layer
+│   │   └── utils/               # mcp_client · notifiers
+│   ├── alembic/                 # DB migrations
+│   ├── tests/                   # pytest test suite
+│   ├── vercel.json              # Vercel serverless + cron config
+│   └── requirements.txt
 ├── frontend/
 │   └── src/
 │       ├── app/                 # Next.js App Router pages
+│       │   ├── page.tsx         # Landing page (/)
+│       │   ├── dashboard/       # Main dashboard
+│       │   ├── servers/         # Server list + detail pages
+│       │   ├── tools/           # Tool call audit log
+│       │   ├── analytics/       # Analytics charts
+│       │   └── alerts/          # Alert rules + history
 │       ├── components/          # UI components by domain
-│       └── lib/                 # API client, types, hooks, utils
-└── docker-compose.yml
+│       │   ├── landing/         # LandingPage (GSAP + Lenis)
+│       │   ├── layout/          # Sidebar · LayoutShell · WebSocketProvider
+│       │   ├── dashboard/       # StatsCards · HealthOverviewChart · etc.
+│       │   ├── servers/         # ServerTable · HealthTimeline · etc.
+│       │   ├── tools/           # ToolCallTable · ToolCallDetail
+│       │   ├── analytics/       # TopToolsChart · LatencyHistogram · etc.
+│       │   ├── alerts/          # AlertRuleForm · AlertHistoryTable
+│       │   └── ui/              # shadcn/ui primitives
+│       └── lib/                 # api.ts · types.ts · hooks.ts · utils.ts
+├── docker-compose.yml           # Local dev stack
+├── .env.example                 # Environment variable template
+├── Deployment.md                # Full production deployment guide
+└── Usage.md                     # Feature usage guide
 ```
+
+<br/>
+
+## 🧪 Tests
+
+```bash
+# E2E tests (Playwright) — runs against the live dev server
+cd frontend
+npx playwright test
+
+# Backend tests (pytest)
+cd backend
+pytest
+```
+
+Playwright tests mock API responses and cover dashboard, server registry, tool calls, analytics, and alerts pages.
+
+<br/>
+
+## 📊 Database Schema
+
+| Table | Purpose |
+|---|---|
+| `mcp_servers` | Server registry — endpoint, owner, tags, status |
+| `health_checks` | Time-series probe results — latency, status, error message |
+| `tool_calls` | Full audit log of every proxied tool invocation |
+| `alert_rules` | Configurable alert conditions per server (or global) |
+| `alert_events` | Fired/resolved alert history |
+| `analytics_snapshots` | Hourly pre-aggregated metrics — prevents costly aggregation on raw rows |
+
+<br/>
+
+## 🗺️ Roadmap
+
+- [ ] Multi-tenant / team workspace support
+- [ ] MCP server auto-discovery (scan local network / Docker)
+- [ ] Token cost estimation per tool call
+- [ ] GitHub Actions integration for CI health checks
+- [ ] Exportable audit reports (CSV / JSON)
+
+<br/>
+
+## 📖 Documentation
+
+| Doc | Description |
+|---|---|
+| [Usage.md](./Usage.md) | Full feature guide — landing page, dashboard, servers, analytics, alerts |
+| [Deployment.md](./Deployment.md) | Step-by-step Neon + Upstash + Vercel deployment |
+| [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger API docs (when running locally) |
+
+<br/>
+
+---
+
+<p align="center">
+  Built as the ops layer the MCP ecosystem is missing.<br/>
+  <em>Grafana for MCP — discovery · health · audit · analytics in a single pane.</em>
+</p>
