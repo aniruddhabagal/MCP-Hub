@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Activity, ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
 import {
   Table,
@@ -159,7 +160,9 @@ export function ServerTable() {
               <TableRow key={server.id} className="group">
                 <TableCell>
                   <div>
-                    <p className="font-medium text-foreground">{server.name}</p>
+                    <Link href={`/servers/${server.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                      {server.name}
+                    </Link>
                     {server.description && (
                       <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate max-w-[200px]">
                         {server.description}

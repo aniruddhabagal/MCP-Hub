@@ -227,10 +227,10 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Server Registry page (ServerTable, RegisterServerModal)
 
 ### Week 6 — Frontend Pages
-- [ ] Server Detail page (HealthTimeline, UptimeCalendar, tabs)
-- [ ] Tool Call audit log page (ToolCallTable, filters, ToolCallDetail drawer)
-- [ ] Analytics page (TopToolsChart, LatencyHistogram, UsageHeatmap)
-- [ ] Alerts page (AlertRuleForm, AlertHistoryTable)
+- [x] Server Detail page (HealthTimeline, UptimeCalendar, tabs)
+- [x] Tool Call audit log page (ToolCallTable, filters, ToolCallDetail drawer)
+- [x] Analytics page (TopToolsChart, LatencyHistogram, UsageHeatmap)
+- [x] Alerts page (AlertRuleForm, AlertHistoryTable)
 
 ### Week 7 — Real-Time + Polish
 - [ ] WebSocket backend handler (`/ws/dashboard`)
