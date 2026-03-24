@@ -20,8 +20,8 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'
 
 // ── Singleton state ───────────────────────────────────────────────────────────
 
-let _isDemoMode = false
-let _isManual = false
+let _isDemoMode = true
+let _isManual = true  // on by default = intentional, not a backend failure
 const _listeners = new Set<() => void>()
 
 function notify() {
