@@ -5,8 +5,7 @@ import type { WsMessage } from './types'
 
 type ConnectionState = 'connecting' | 'connected' | 'disconnected'
 
-const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8000/ws/dashboard'
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? ''
 
 const BASE_DELAY = 1_000
 const MAX_DELAY = 30_000
@@ -20,7 +19,8 @@ export function useWebSocket() {
   const unmounted = useRef(false)
 
   const connect = useCallback(() => {
-    if (unmounted.current) return
+    // Skip if no WS URL configured (e.g. Vercel deployment without WebSocket support)
+    if (!WS_URL || unmounted.current) return
     setConnectionState('connecting')
 
     const ws = new WebSocket(WS_URL)
