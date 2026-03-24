@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { WsMessage } from './types'
+import { isDemoMode } from './demo-mode'
 
 type ConnectionState = 'connecting' | 'connected' | 'disconnected'
 
@@ -19,8 +20,8 @@ export function useWebSocket() {
   const unmounted = useRef(false)
 
   const connect = useCallback(() => {
-    // Skip if no WS URL configured (e.g. Vercel deployment without WebSocket support)
-    if (!WS_URL || unmounted.current) return
+    // Skip if no WS URL configured or in demo mode
+    if (!WS_URL || unmounted.current || isDemoMode()) return
     setConnectionState('connecting')
 
     const ws = new WebSocket(WS_URL)

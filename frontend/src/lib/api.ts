@@ -17,6 +17,7 @@ import type {
   ToolCallCreate,
   TopTool,
 } from './types'
+import { getDemoResponse, isDemoMode, setDemoMode } from './demo-mode'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'
 const CRON_SECRET = process.env.NEXT_PUBLIC_CRON_SECRET ?? ''
@@ -26,6 +27,12 @@ async function apiFetch<T>(
   init?: RequestInit & { params?: Record<string, string | number | undefined> }
 ): Promise<T> {
   const { params, ...rest } = init ?? {}
+
+  // Demo mode fast path — skip all network calls
+  if (isDemoMode()) {
+    return getDemoResponse(path, params, rest.method) as T
+  }
+
   let url = `${BASE}${path}`
   if (params) {
     const qs = new URLSearchParams()
@@ -35,16 +42,25 @@ async function apiFetch<T>(
     const str = qs.toString()
     if (str) url += `?${str}`
   }
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...(rest.headers ?? {}) },
-    ...rest,
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`${res.status} ${res.statusText}: ${text}`)
+  try {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...(rest.headers ?? {}) },
+      ...rest,
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(`${res.status} ${res.statusText}: ${text}`)
+    }
+    if (res.status === 204) return undefined as T
+    return res.json()
+  } catch (err) {
+    // Network failure (TypeError) or abort — backend is unreachable, enter demo mode
+    if (err instanceof TypeError || (err instanceof DOMException && err.name === 'AbortError')) {
+      setDemoMode(true)
+      return getDemoResponse(path, params, rest.method) as T
+    }
+    throw err
   }
-  if (res.status === 204) return undefined as T
-  return res.json()
 }
 
 // ── Servers ──────────────────────────────────────────────────────────────────

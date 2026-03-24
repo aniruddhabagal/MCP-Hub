@@ -10,8 +10,11 @@ import {
   Server,
   Zap,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useWebSocket } from '@/lib/websocket'
+import { useDemoMode, toggleDemoMode } from '@/lib/demo-mode'
+import { Switch } from '@/components/ui/switch'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -24,6 +27,8 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const { connectionState } = useWebSocket()
+  const demo = useDemoMode()
+  const queryClient = useQueryClient()
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-56 border-r border-border bg-surface flex flex-col z-40">
@@ -100,6 +105,17 @@ export function Sidebar() {
         <p className="text-[9px] font-mono text-muted-foreground/40 mt-1">
           ws/dashboard
         </p>
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+          <span className="text-[10px] font-mono text-muted-foreground">Demo mode</span>
+          <Switch
+            checked={demo}
+            onCheckedChange={() => {
+              toggleDemoMode()
+              queryClient.invalidateQueries()
+            }}
+            className="scale-75 origin-right"
+          />
+        </div>
       </div>
     </aside>
   )
