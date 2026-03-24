@@ -7,13 +7,14 @@ MCPHub is a centralized control plane for monitoring, auditing, and managing MCP
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
-2. [Landing Page](#landing-page)
-3. [Dashboard](#dashboard)
-4. [Server Registry](#server-registry)
-5. [Health Monitoring](#health-monitoring)
-6. [Tool Call Audit Log](#tool-call-audit-log)
-7. [Analytics](#analytics)
-8. [Alerts & Rules](#alerts--rules)
+2. [Demo Mode](#demo-mode)
+3. [Landing Page](#landing-page)
+4. [Dashboard](#dashboard)
+5. [Server Registry](#server-registry)
+6. [Health Monitoring](#health-monitoring)
+7. [Tool Call Audit Log](#tool-call-audit-log)
+8. [Analytics](#analytics)
+9. [Alerts & Rules](#alerts--rules)
 
 ---
 
@@ -36,6 +37,47 @@ Visit your deployed MCPHub instance (e.g., `https://mcphub.yourdomain.com`)
 1. **Open the landing page** at `/` to understand MCPHub's purpose and architecture
 2. **Navigate to the Dashboard** via the navbar "Open Dashboard" button or by visiting `/dashboard`
 3. **Register your first MCP server** in the Servers section
+
+---
+
+## Demo Mode
+
+MCPHub includes a **Demo Mode** that serves realistic sample data when the backend is unavailable. This ensures the dashboard always looks fully populated — even if the backend, database, or Redis are not running.
+
+### How It Works
+
+**Auto-detection**
+- When the frontend fails to reach the backend (network error, connection refused, DNS failure), demo mode activates automatically on the first failed request.
+- A yellow banner appears at the top of every page: *"Live demo — backend not connected"*
+- The frontend retries the backend every 60 seconds. When the backend comes back online, demo mode deactivates and live data loads automatically.
+- A **"Retry connection"** button in the banner lets you trigger an immediate check.
+
+**Manual toggle**
+- A **"Demo mode"** switch is always visible in the bottom of the left sidebar.
+- Toggle it on at any time — even with a live backend — to preview the demo dataset.
+- Toggle it off to instantly switch back to live data.
+- When active manually, the banner reads: *"Demo mode — viewing sample data"* with an **"Exit demo"** button.
+
+### What You'll See in Demo Mode
+
+The sample dataset includes:
+
+| Server | Status | Story |
+|---|---|---|
+| `github-mcp` | Healthy | Star performer — 99.8% uptime, 45ms avg |
+| `slack-mcp` | Healthy | Solid workhorse — 99.2% uptime |
+| `jira-mcp` | Healthy | Slightly slower — 120ms avg |
+| `confluence-mcp` | Degraded | High latency problem — 340ms, p95 892ms |
+| `notion-mcp` | Unhealthy | Flaky — 72.1% availability |
+| `linear-mcp` | Down | Currently offline |
+
+Also included: 50 tool calls, 3 alert rules, 5 alert events (3 firing, 2 resolved), and a full set of analytics and health check history.
+
+### What's Not Available in Demo Mode
+
+- **Registering servers**, creating alert rules, or any write operations — these show a toast: *"Not available in demo mode"*
+- **"Run Probes"** and **"Evaluate Alerts"** buttons return simulated results (no real probe is made)
+- **WebSocket** real-time updates are paused
 
 ---
 
@@ -103,6 +145,7 @@ The Dashboard is your command center for MCP infrastructure health.
   - 🟢 **Live** — Connected to real-time WebSocket
   - 🟡 **Connecting…** — Attempting connection
   - ⚫ **Offline** — No WebSocket connection
+- **Demo Mode Toggle** (very bottom): Switch to enable/disable demo mode on demand
 
 ### Dashboard Metrics
 

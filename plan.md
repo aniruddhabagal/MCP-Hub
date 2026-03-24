@@ -372,6 +372,41 @@ The analytics aggregator runs via Vercel Cron (`0 2 * * *`) — once daily is ap
 
 ---
 
+## Phase 7 — Demo Mode
+
+Portfolio projects need to impress recruiters regardless of whether the backend is running. Demo mode ensures the dashboard always looks fully populated.
+
+### Architecture
+
+**Interception at `apiFetch` (single chokepoint)** — all data flows through `apiFetch` in `lib/api.ts`. A try/catch around the fetch call detects `TypeError` (network failure) and activates demo mode. HTTP errors (4xx/5xx) propagate normally since those indicate the backend is reachable.
+
+**Module-level singleton (`lib/demo-mode.ts`)** — plain JS module, not React state, so it can be read inside `apiFetch` without prop-drilling. Bridged to React via `useSyncExternalStore` for zero-overhead subscriptions.
+
+**Two activation triggers:**
+1. **Auto** — first `apiFetch` network failure sets `_isDemoMode = true`, banner appears
+2. **Manual** — "Demo mode" `Switch` in Sidebar footer calls `toggleDemoMode()` + `queryClient.invalidateQueries()`
+
+**Route matcher (`getDemoResponse`)** — maps API path + params to static mock data. Handles pagination slicing (`/tool-calls` offset/limit), param-based filtering (`/alerts/events` state/server_id), and dynamic segments (`/servers/:id` with fallback).
+
+**Mutation blocking** — non-GET requests other than the three allowed probe endpoints throw `DemoModeError`. A global `MutationCache.onError` in `providers.tsx` catches it and shows a Sonner toast. Zero per-component changes.
+
+**Auto switch-back** — `DemoBanner` runs a 60s `setInterval` (only in auto mode, not manual) that calls `checkBackendHealth()`. On success: `setDemoMode(false)` + `queryClient.invalidateQueries()` seamlessly restores live data.
+
+### Key Files
+
+| File | Role |
+|---|---|
+| `frontend/src/lib/demo-data.ts` | Static dataset: 6 servers, 50 tool calls, health checks, analytics, alerts |
+| `frontend/src/lib/demo-mode.ts` | Singleton state, route matcher, `useSyncExternalStore` bridge, `DemoModeError` |
+| `frontend/src/components/layout/DemoBanner.tsx` | Context-aware banner (auto vs manual text), retry/exit button, 60s interval |
+| `frontend/src/lib/api.ts` | Intercepts network failures, demo fast-path at top of `apiFetch` |
+| `frontend/src/app/providers.tsx` | `MutationCache` global handler for `DemoModeError` toast |
+| `frontend/src/components/layout/LayoutShell.tsx` | Renders `<DemoBanner />` when demo active |
+| `frontend/src/components/layout/Sidebar.tsx` | "Demo mode" `Switch` toggle in footer |
+| `frontend/src/lib/websocket.ts` | Skips WS connection when `isDemoMode()` is true |
+
+---
+
 ## Verification
 
 After each phase:

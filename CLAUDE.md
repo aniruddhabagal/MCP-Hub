@@ -242,6 +242,15 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] README
 - [x] Landing page at `/` with Lenis + GSAP scroll animations
 
+### Week 8 — Demo Mode
+- [x] `lib/demo-data.ts` — static mock dataset (6 servers, 50 tool calls, analytics, alerts)
+- [x] `lib/demo-mode.ts` — module singleton, route matcher, `useSyncExternalStore` bridge
+- [x] Auto-detection: network failure in `apiFetch` triggers demo mode automatically
+- [x] Manual toggle: "Demo mode" switch in Sidebar footer
+- [x] `DemoBanner` component — context-aware banner with Retry / Exit demo button
+- [x] Mutations blocked in demo mode with global toast via `MutationCache`
+- [x] Auto switch-back: 60s health-check interval restores live data when backend recovers
+
 ---
 
 ## Why This Is a Real Gap Right Now
