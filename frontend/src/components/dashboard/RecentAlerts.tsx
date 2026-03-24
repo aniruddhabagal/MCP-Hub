@@ -57,7 +57,7 @@ export function RecentAlerts() {
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                    event.state === 'firing'
+                    event.state === 'fired'
                       ? 'bg-status-error animate-pulse-dot'
                       : 'bg-status-healthy'
                   }`}
@@ -74,7 +74,7 @@ export function RecentAlerts() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Badge
-                    variant={event.state === 'firing' ? 'firing' : 'resolved'}
+                    variant={event.state === 'fired' ? 'firing' : 'resolved'}
                     className="text-[10px] py-0 px-1.5"
                   >
                     {event.state}

@@ -62,7 +62,7 @@ export function StatsCards() {
   const { data: servers, isLoading: serversLoading } = useServers()
   const { data: healthSummary, isLoading: healthLoading } = useHealthSummary()
   const { data: alertEvents, isLoading: alertsLoading } = useAlertEvents({
-    state: 'firing',
+    state: 'fired',
     limit: 100,
   })
   const { data: toolCalls, isLoading: toolsLoading } = useToolCalls({
@@ -83,7 +83,7 @@ export function StatsCards() {
       : null
 
   const firingAlerts =
-    alertEvents?.filter((e) => e.state === 'firing').length ?? 0
+    alertEvents?.filter((e) => e.state === 'fired').length ?? 0
 
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">

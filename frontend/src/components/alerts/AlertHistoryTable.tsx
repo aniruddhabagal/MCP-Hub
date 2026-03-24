@@ -44,14 +44,14 @@ export function AlertHistoryTable() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All events</SelectItem>
-            <SelectItem value="firing">Firing</SelectItem>
+            <SelectItem value="fired">Fired</SelectItem>
             <SelectItem value="resolved">Resolved</SelectItem>
           </SelectContent>
         </Select>
 
         {events && (
           <span className="text-xs font-mono text-muted-foreground ml-auto">
-            {events.filter((e) => e.state === 'firing').length} firing
+            {events.filter((e) => e.state === 'fired').length} firing
           </span>
         )}
       </div>
@@ -96,12 +96,12 @@ export function AlertHistoryTable() {
                   <TableRow key={ev.id}>
                     <TableCell>
                       <Badge
-                        variant={ev.state === 'firing' ? 'firing' : 'resolved'}
+                        variant={ev.state === 'fired' ? 'firing' : 'resolved'}
                         className="text-[10px]"
                       >
                         <span
                           className={`w-1 h-1 rounded-full ${
-                            ev.state === 'firing'
+                            ev.state === 'fired'
                               ? 'bg-status-error animate-pulse-dot'
                               : 'bg-status-healthy'
                           }`}

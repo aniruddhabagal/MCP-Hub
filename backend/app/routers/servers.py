@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.health_prober import _probe_one
 from app.database import get_db
 from app.models.server import MCPServer
 from app.schemas.server import ServerCreate, ServerResponse, ServerUpdate
@@ -54,3 +55,13 @@ async def delete_server(server_id: uuid.UUID, db: AsyncSession = Depends(get_db)
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
     await db.delete(server)
+
+
+@router.post("/{server_id}/probe")
+async def probe_server(server_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    server = await db.get(MCPServer, server_id)
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    result = await _probe_one(server, db)
+    await db.flush()
+    return result

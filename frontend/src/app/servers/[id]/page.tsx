@@ -305,12 +305,12 @@ export default function ServerDetailPage({
                       <TableCell>
                         <span
                           className={`inline-flex items-center gap-1.5 text-xs font-mono ${
-                            ev.state === 'firing' ? 'text-status-error' : 'text-status-healthy'
+                            ev.state === 'fired' ? 'text-status-error' : 'text-status-healthy'
                           }`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              ev.state === 'firing' ? 'bg-status-error animate-pulse-dot' : 'bg-status-healthy'
+                              ev.state === 'fired' ? 'bg-status-error animate-pulse-dot' : 'bg-status-healthy'
                             }`}
                           />
                           {ev.state}

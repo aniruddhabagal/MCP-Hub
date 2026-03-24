@@ -16,6 +16,7 @@ wheels/
 .installed.cfg
 lib/
 lib64/
+!frontend/src/lib/
 
 # Virtual environments
 .venv/
