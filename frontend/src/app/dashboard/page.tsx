@@ -74,7 +74,7 @@ export default function DashboardPage() {
               { label: 'Alert Evaluator', desc: 'On-demand trigger', ok: true },
               { label: 'Analytics Aggregator', desc: 'Vercel Cron — daily 02:00', ok: true },
               { label: 'Proxy Endpoint', desc: '/api/v1/proxy/{server_id}/mcp', ok: true },
-              { label: 'WebSocket', desc: 'Week 7 — coming soon', ok: false },
+              { label: 'WebSocket', desc: '/ws/dashboard — live', ok: true },
             ].map(({ label, desc, ok }) => (
               <div key={label} className="flex items-center gap-3">
                 <span

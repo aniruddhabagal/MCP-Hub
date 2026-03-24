@@ -11,6 +11,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useWebSocket } from '@/lib/websocket'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -22,6 +23,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { connectionState } = useWebSocket()
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-56 border-r border-border bg-surface flex flex-col z-40">
@@ -77,11 +79,26 @@ export function Sidebar() {
       {/* Footer status */}
       <div className="px-5 py-4 border-t border-border">
         <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
-          <span className="w-1.5 h-1.5 rounded-full bg-status-healthy animate-pulse-dot" />
-          <span>API Connected</span>
+          <span
+            className={cn(
+              'w-1.5 h-1.5 rounded-full',
+              connectionState === 'connected'
+                ? 'bg-status-healthy animate-pulse-dot'
+                : connectionState === 'connecting'
+                  ? 'bg-status-warning animate-pulse'
+                  : 'bg-muted-foreground/40'
+            )}
+          />
+          <span>
+            {connectionState === 'connected'
+              ? 'Live'
+              : connectionState === 'connecting'
+                ? 'Connecting…'
+                : 'Offline'}
+          </span>
         </div>
         <p className="text-[9px] font-mono text-muted-foreground/40 mt-1">
-          localhost:8000
+          ws/dashboard
         </p>
       </div>
     </aside>
