@@ -364,14 +364,14 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Auto switch-back: 60s health-check interval restores live data when backend recovers
 
 ### Week 9 — Multi-Tenant: Database + Auth Foundation
-- [ ] `passlib[bcrypt]` + `python-jose[cryptography]` dependencies
-- [ ] `User` ORM model (`app/models/user.py`) with `is_superadmin` flag
-- [ ] `Workspace`, `WorkspaceMember`, `WorkspaceInvite`, `ApiKey` models (`app/models/workspace.py`)
-- [ ] Add `workspace_id` FK to all 6 existing models
-- [ ] Alembic migration `0002_multi_tenant.py` with default workspace backfill
-- [ ] `security.py` — password hashing + JWT creation/decode
-- [ ] `dependencies/auth.py` — `get_current_user`, `get_current_workspace`, `require_role`, `require_superadmin`
-- [ ] Config: `jwt_access_token_expire_minutes`, `jwt_refresh_token_expire_days`, `superadmin_emails`
+- [x] `passlib[bcrypt]` + `python-jose[cryptography]` dependencies
+- [x] `User` ORM model (`app/models/user.py`) with `is_superadmin` flag
+- [x] `Workspace`, `WorkspaceMember`, `WorkspaceInvite`, `ApiKey` models (`app/models/workspace.py`)
+- [x] Add `workspace_id` FK to all 6 existing models
+- [x] Alembic migration `0002_multi_tenant.py` with default workspace backfill
+- [x] `security.py` — password hashing + JWT creation/decode
+- [x] `dependencies/auth.py` — `get_current_user`, `get_current_workspace`, `require_role`, `require_superadmin`
+- [x] Config: `jwt_access_token_expire_minutes`, `jwt_refresh_token_expire_days`, `superadmin_emails`
 
 ### Week 10 — Multi-Tenant: Auth + Workspace Routers
 - [ ] Auth schemas (`schemas/auth.py`) + workspace schemas (`schemas/workspace.py`)
