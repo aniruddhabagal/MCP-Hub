@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og'
+import type { ImageResponseOptions } from 'next/server'
 
 export const runtime = 'edge'
 export const alt = 'MCPHub — MCP Server Registry, Health Monitor & Dashboard'
@@ -25,7 +26,7 @@ export default async function Image() {
     ),
   ])
 
-  const fonts: ConstructorParameters<typeof ImageResponse>[1]['fonts'] = []
+  const fonts: ImageResponseOptions['fonts'] = []
   if (monoFont) fonts.push({ name: 'IBMPlexMono', data: monoFont, weight: 400, style: 'normal' })
   if (serifFont) fonts.push({ name: 'InstrumentSerif', data: serifFont, weight: 400, style: 'italic' })
 
