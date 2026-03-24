@@ -381,11 +381,11 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Register new routers in `main.py`
 
 ### Week 11 — Multi-Tenant: Tenant-Scope Existing Endpoints
-- [ ] Add auth deps + workspace filter to all 7 existing routers
-- [ ] Update agents for per-workspace operation (optional `workspace_id` param)
-- [ ] Workspace-scoped Redis cache keys and pub/sub channels
-- [ ] WebSocket auth via `?token=<jwt>` + workspace-scoped subscription
-- [ ] Update backend tests for workspace context
+- [x] Add auth deps + workspace filter to all 7 existing routers
+- [x] Update agents for per-workspace operation (optional `workspace_id` param)
+- [x] Workspace-scoped Redis cache keys and pub/sub channels
+- [x] WebSocket auth via `?token=<jwt>` + workspace-scoped subscription
+- [x] Update backend tests for workspace context
 
 ### Week 12 — Multi-Tenant: Frontend Auth + Workspace UI
 - [ ] `AuthProvider` context + `useAuth()` hook (`lib/auth.ts`)

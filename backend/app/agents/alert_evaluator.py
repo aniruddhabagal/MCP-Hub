@@ -1,9 +1,8 @@
 """Alert Evaluator agent.
 
-For each enabled alert rule, computes the metric over the rule's time window
-from recent health_checks, compares against the threshold, and fires or
-resolves AlertEvent rows accordingly.  Notifies via Slack/webhook when state
-changes.
+For each enabled alert rule (optionally scoped to a workspace), computes the
+metric over the rule's time window, compares against the threshold, and fires
+or resolves AlertEvent rows accordingly.
 
 Invoked on-demand via POST /api/v1/admin/evaluate-alerts.
 """
@@ -22,12 +21,19 @@ from app.redis_client import get_redis
 from app.utils.notifiers import notify_alert_fired, notify_alert_resolved
 
 logger = logging.getLogger(__name__)
-CHANNEL = "mcphub:dashboard"
 
 
-async def _publish_alert_event(state: str, rule_name: str, message: str, rule_id: str, server_id: str | None) -> None:
+async def _publish_alert_event(
+    workspace_id: uuid.UUID,
+    state: str,
+    rule_name: str,
+    message: str,
+    rule_id: str,
+    server_id: str | None,
+) -> None:
     try:
         redis = await get_redis()
+        channel = f"mcphub:dashboard:{workspace_id}"
         payload = json.dumps({
             "type": "alert_event",
             "state": state,
@@ -36,7 +42,7 @@ async def _publish_alert_event(state: str, rule_name: str, message: str, rule_id
             "rule_id": rule_id,
             "server_id": server_id,
         })
-        await redis.publish(CHANNEL, payload)
+        await redis.publish(channel, payload)
     except Exception as exc:
         logger.warning("Failed to publish alert_event: %s", exc)
 
@@ -45,7 +51,10 @@ async def _publish_alert_event(state: str, rule_name: str, message: str, rule_id
 
 async def _compute_metric(rule: AlertRule, db: AsyncSession) -> float | None:
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=rule.window_minutes)
-    stmt = select(HealthCheck).where(HealthCheck.checked_at >= cutoff)
+    stmt = select(HealthCheck).where(
+        HealthCheck.workspace_id == rule.workspace_id,
+        HealthCheck.checked_at >= cutoff,
+    )
     if rule.server_id:
         stmt = stmt.where(HealthCheck.server_id == rule.server_id)
     result = await db.execute(stmt)
@@ -83,7 +92,11 @@ def _condition_met(value: float, operator: str, threshold: float) -> bool:
 
 # ── Last event lookup ─────────────────────────────────────────────────────────
 
-async def _last_event(rule_id: uuid.UUID, server_id: uuid.UUID | None, db: AsyncSession) -> AlertEvent | None:
+async def _last_event(
+    rule_id: uuid.UUID,
+    server_id: uuid.UUID | None,
+    db: AsyncSession,
+) -> AlertEvent | None:
     stmt = (
         select(AlertEvent)
         .where(AlertEvent.rule_id == rule_id)
@@ -112,7 +125,12 @@ async def _evaluate_rule(rule: AlertRule, db: AsyncSession) -> dict:
     sname = await _server_name(rule.server_id, db)
 
     if value is None:
-        return {"rule_id": str(rule.id), "rule_name": rule.name, "skipped": True, "reason": "no data"}
+        return {
+            "rule_id": str(rule.id),
+            "rule_name": rule.name,
+            "skipped": True,
+            "reason": "no data",
+        }
 
     firing = _condition_met(value, rule.operator, rule.threshold)
     last = await _last_event(rule.id, rule.server_id, db)
@@ -126,6 +144,7 @@ async def _evaluate_rule(rule: AlertRule, db: AsyncSession) -> dict:
         )
         event = AlertEvent(
             id=uuid.uuid4(),
+            workspace_id=rule.workspace_id,
             rule_id=rule.id,
             server_id=rule.server_id,
             state="fired",
@@ -135,13 +154,17 @@ async def _evaluate_rule(rule: AlertRule, db: AsyncSession) -> dict:
         )
         db.add(event)
         await notify_alert_fired(rule.name, sname, rule.metric, value, rule.threshold)
-        await _publish_alert_event("fired", rule.name, msg, str(rule.id), str(rule.server_id) if rule.server_id else None)
+        await _publish_alert_event(
+            rule.workspace_id, "fired", rule.name, msg,
+            str(rule.id), str(rule.server_id) if rule.server_id else None,
+        )
         return {"rule_id": str(rule.id), "rule_name": rule.name, "state": "fired", "value": value}
 
     if not firing and last_state == "fired":
         resolved_msg = f"{rule.metric} back within threshold ({value:.2f})"
         event = AlertEvent(
             id=uuid.uuid4(),
+            workspace_id=rule.workspace_id,
             rule_id=rule.id,
             server_id=rule.server_id,
             state="resolved",
@@ -152,17 +175,35 @@ async def _evaluate_rule(rule: AlertRule, db: AsyncSession) -> dict:
         )
         db.add(event)
         await notify_alert_resolved(rule.name, sname, rule.metric)
-        await _publish_alert_event("resolved", rule.name, resolved_msg, str(rule.id), str(rule.server_id) if rule.server_id else None)
+        await _publish_alert_event(
+            rule.workspace_id, "resolved", rule.name, resolved_msg,
+            str(rule.id), str(rule.server_id) if rule.server_id else None,
+        )
         return {"rule_id": str(rule.id), "rule_name": rule.name, "state": "resolved", "value": value}
 
-    return {"rule_id": str(rule.id), "rule_name": rule.name, "state": last_state or "ok", "value": value}
+    return {
+        "rule_id": str(rule.id),
+        "rule_name": rule.name,
+        "state": last_state or "ok",
+        "value": value,
+    }
 
 
 # ── Main entry point ──────────────────────────────────────────────────────────
 
-async def run_evaluate_alerts(db: AsyncSession) -> list[dict]:
-    """Evaluate all enabled alert rules. Returns a summary list."""
-    result = await db.execute(select(AlertRule).where(AlertRule.enabled.is_(True)))
+async def run_evaluate_alerts(
+    db: AsyncSession,
+    workspace_id: uuid.UUID | None = None,
+) -> list[dict]:
+    """Evaluate enabled alert rules and return a summary list.
+
+    If workspace_id is provided, evaluates only rules for that workspace.
+    When None (cron), evaluates all workspaces.
+    """
+    q = select(AlertRule).where(AlertRule.enabled.is_(True))
+    if workspace_id is not None:
+        q = q.where(AlertRule.workspace_id == workspace_id)
+    result = await db.execute(q)
     rules = result.scalars().all()
 
     if not rules:

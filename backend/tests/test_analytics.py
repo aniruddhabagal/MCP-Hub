@@ -8,20 +8,35 @@ import pytest
 from app.agents.analytics_aggregator import run_aggregate_analytics
 from app.models.server import MCPServer
 from app.models.tool_call import ToolCall
+from tests.conftest import TEST_WORKSPACE_ID
 
 pytestmark = pytest.mark.asyncio
 
 
-async def _make_server(db, name="Analytics Server"):
-    server = MCPServer(id=uuid.uuid4(), name=name, endpoint="http://mock.internal/mcp")
+async def _make_server(db, name="Analytics Server", workspace_id=TEST_WORKSPACE_ID):
+    server = MCPServer(
+        id=uuid.uuid4(),
+        workspace_id=workspace_id,
+        name=name,
+        endpoint="http://mock.internal/mcp",
+    )
     db.add(server)
     await db.flush()
     return server
 
 
-async def _make_call(db, server_id, tool_name="search", status="success", duration_ms=50.0, output_size_bytes=100):
+async def _make_call(
+    db,
+    server_id,
+    tool_name="search",
+    status="success",
+    duration_ms=50.0,
+    output_size_bytes=100,
+    workspace_id=TEST_WORKSPACE_ID,
+):
     tc = ToolCall(
         id=uuid.uuid4(),
+        workspace_id=workspace_id,
         server_id=server_id,
         tool_name=tool_name,
         status=status,
@@ -54,7 +69,6 @@ async def test_aggregate_creates_snapshots(db_session):
     await _make_call(db_session, server.id, tool_name="fetch", duration_ms=50.0, status="error")
 
     result = await run_aggregate_analytics(db_session)
-    # 2 distinct (server, tool) combinations → 2 snapshots
     assert result["snapshots"] == 2
     assert result["windows_written"] >= 1
 
@@ -77,16 +91,29 @@ async def test_aggregate_error_count(db_session):
     snap = next(s for s in snaps if s.tool_name == "run")
     assert snap.call_count == 3
     assert snap.error_count == 2
+    assert snap.workspace_id == TEST_WORKSPACE_ID
+
+
+async def test_aggregate_workspace_scoped(db_session):
+    """Aggregating with workspace_id=X should only process calls from that workspace."""
+    from sqlalchemy import select
+    from app.models.analytics import AnalyticsSnapshot
+
+    other_ws = uuid.uuid4()
+    server_mine = await _make_server(db_session, workspace_id=TEST_WORKSPACE_ID)
+    server_other = await _make_server(db_session, name="Other", workspace_id=other_ws)
+
+    await _make_call(db_session, server_mine.id, workspace_id=TEST_WORKSPACE_ID)
+    await _make_call(db_session, server_other.id, workspace_id=other_ws)
+
+    result = await run_aggregate_analytics(db_session, workspace_id=TEST_WORKSPACE_ID)
+    assert result["snapshots"] == 1
+
+    snaps = (await db_session.execute(select(AnalyticsSnapshot))).scalars().all()
+    assert all(s.workspace_id == TEST_WORKSPACE_ID for s in snaps)
 
 
 # ── Analytics API endpoint tests ──────────────────────────────────────────────
-
-async def _no_redis(monkeypatch):
-    """Patch Redis cache to always miss so tests hit the DB."""
-    with patch("app.routers.analytics._cache_get", new=AsyncMock(return_value=None)), \
-         patch("app.routers.analytics._cache_set", new=AsyncMock()):
-        yield
-
 
 async def test_top_tools_empty(client):
     with patch("app.routers.analytics._cache_get", new=AsyncMock(return_value=None)), \
@@ -115,11 +142,9 @@ async def test_top_tools_returns_data(client):
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 2
-    # "search" has 3 calls, should be first
     assert data[0]["tool_name"] == "search"
     assert data[0]["call_count"] == 3
     assert data[0]["error_rate"] == 0.0
-    # "fetch" has 1 error
     fetch = next(d for d in data if d["tool_name"] == "fetch")
     assert fetch["error_rate"] == 100.0
 

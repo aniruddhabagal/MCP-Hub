@@ -9,20 +9,35 @@ from app.agents.alert_evaluator import run_evaluate_alerts
 from app.models.alert import AlertEvent, AlertRule
 from app.models.health_check import HealthCheck
 from app.models.server import MCPServer
+from tests.conftest import TEST_WORKSPACE_ID
 
 pytestmark = pytest.mark.asyncio
 
 
-async def _make_server(db, name="Alert Test Server"):
-    server = MCPServer(id=uuid.uuid4(), name=name, endpoint="http://mock.internal/mcp")
+async def _make_server(db, name="Alert Test Server", workspace_id=TEST_WORKSPACE_ID):
+    server = MCPServer(
+        id=uuid.uuid4(),
+        workspace_id=workspace_id,
+        name=name,
+        endpoint="http://mock.internal/mcp",
+    )
     db.add(server)
     await db.flush()
     return server
 
 
-async def _make_rule(db, server_id=None, metric="error_rate", operator="gt", threshold=50.0, window_minutes=60):
+async def _make_rule(
+    db,
+    server_id=None,
+    metric="error_rate",
+    operator="gt",
+    threshold=50.0,
+    window_minutes=60,
+    workspace_id=TEST_WORKSPACE_ID,
+):
     rule = AlertRule(
         id=uuid.uuid4(),
+        workspace_id=workspace_id,
         name=f"Test {metric} rule",
         server_id=server_id,
         metric=metric,
@@ -36,9 +51,10 @@ async def _make_rule(db, server_id=None, metric="error_rate", operator="gt", thr
     return rule
 
 
-async def _make_check(db, server_id, status="healthy", latency_ms=50.0):
+async def _make_check(db, server_id, status="healthy", latency_ms=50.0, workspace_id=TEST_WORKSPACE_ID):
     check = HealthCheck(
         id=uuid.uuid4(),
+        workspace_id=workspace_id,
         server_id=server_id,
         status=status,
         latency_ms=latency_ms,
@@ -67,7 +83,6 @@ async def test_evaluate_error_rate_fires(db_session):
     server = await _make_server(db_session)
     rule = await _make_rule(db_session, server_id=server.id, metric="error_rate", operator="gt", threshold=50.0)
 
-    # 3 down, 1 healthy → 75% error rate
     for _ in range(3):
         await _make_check(db_session, server.id, status="down", latency_ms=None)
     await _make_check(db_session, server.id, status="healthy")
@@ -78,18 +93,17 @@ async def test_evaluate_error_rate_fires(db_session):
     assert results[0]["state"] == "fired"
     assert results[0]["value"] == pytest.approx(75.0)
 
-    # AlertEvent should be persisted
     from sqlalchemy import select
     evts = (await db_session.execute(select(AlertEvent).where(AlertEvent.rule_id == rule.id))).scalars().all()
     assert len(evts) == 1
     assert evts[0].state == "fired"
+    assert evts[0].workspace_id == TEST_WORKSPACE_ID
 
 
 async def test_evaluate_error_rate_not_exceeded(db_session):
     server = await _make_server(db_session)
     await _make_rule(db_session, server_id=server.id, metric="error_rate", operator="gt", threshold=50.0)
 
-    # 1 down, 3 healthy → 25% error rate
     await _make_check(db_session, server.id, status="down", latency_ms=None)
     for _ in range(3):
         await _make_check(db_session, server.id, status="healthy")
@@ -102,7 +116,6 @@ async def test_evaluate_availability_fires(db_session):
     server = await _make_server(db_session)
     await _make_rule(db_session, server_id=server.id, metric="availability", operator="lt", threshold=80.0)
 
-    # 1 healthy, 4 down → 20% availability
     await _make_check(db_session, server.id, status="healthy")
     for _ in range(4):
         await _make_check(db_session, server.id, status="down", latency_ms=None)
@@ -118,10 +131,9 @@ async def test_evaluate_latency_p95_fires(db_session):
     server = await _make_server(db_session)
     await _make_rule(db_session, server_id=server.id, metric="latency_p95", operator="gt", threshold=200.0)
 
-    # Most checks are fast, but p95 should be high
     for _ in range(19):
         await _make_check(db_session, server.id, latency_ms=50.0)
-    await _make_check(db_session, server.id, latency_ms=500.0)  # 95th pct
+    await _make_check(db_session, server.id, latency_ms=500.0)
 
     with patch("app.agents.alert_evaluator.notify_alert_fired", new=AsyncMock()):
         results = await run_evaluate_alerts(db_session)
@@ -133,9 +145,9 @@ async def test_evaluate_resolves_open_alert(db_session):
     server = await _make_server(db_session)
     rule = await _make_rule(db_session, server_id=server.id, metric="error_rate", operator="gt", threshold=50.0)
 
-    # Seed a prior "fired" event
     fired_event = AlertEvent(
         id=uuid.uuid4(),
+        workspace_id=TEST_WORKSPACE_ID,
         rule_id=rule.id,
         server_id=server.id,
         state="fired",
@@ -145,7 +157,6 @@ async def test_evaluate_resolves_open_alert(db_session):
     db_session.add(fired_event)
     await db_session.flush()
 
-    # Now all checks are healthy → error_rate = 0 → should resolve
     for _ in range(4):
         await _make_check(db_session, server.id, status="healthy")
 
@@ -165,6 +176,7 @@ async def test_evaluate_disabled_rule_skipped(db_session):
     server = await _make_server(db_session)
     rule = AlertRule(
         id=uuid.uuid4(),
+        workspace_id=TEST_WORKSPACE_ID,
         name="Disabled rule",
         server_id=server.id,
         metric="error_rate",
@@ -177,7 +189,21 @@ async def test_evaluate_disabled_rule_skipped(db_session):
     await _make_check(db_session, server.id, status="down", latency_ms=None)
 
     results = await run_evaluate_alerts(db_session)
-    assert results == []  # disabled rule not evaluated
+    assert results == []
+
+
+async def test_evaluate_workspace_scoped(db_session):
+    """run_evaluate_alerts(workspace_id=X) should not evaluate rules from other workspaces."""
+    other_ws = uuid.uuid4()
+    server_mine = await _make_server(db_session, workspace_id=TEST_WORKSPACE_ID)
+    server_other = await _make_server(db_session, name="Other", workspace_id=other_ws)
+
+    await _make_rule(db_session, server_id=server_mine.id, workspace_id=TEST_WORKSPACE_ID)
+    await _make_rule(db_session, server_id=server_other.id, workspace_id=other_ws)
+
+    results = await run_evaluate_alerts(db_session, workspace_id=TEST_WORKSPACE_ID)
+    # Only the rule scoped to TEST_WORKSPACE_ID should be evaluated
+    assert len(results) == 1
 
 
 # ── Alert Rules API tests ─────────────────────────────────────────────────────
@@ -202,7 +228,7 @@ async def test_create_alert_rule(client):
     assert data["name"] == "High error rate"
     assert data["metric"] == "error_rate"
     assert data["threshold"] == 25.0
-    assert data["server_id"] is None  # global rule
+    assert data["server_id"] is None
 
 
 async def test_get_alert_rule(client):
