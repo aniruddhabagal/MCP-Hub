@@ -1,5 +1,8 @@
+import asyncio
 from contextlib import asynccontextmanager
 
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,9 +11,18 @@ from app.redis_client import close_redis, get_redis
 from app.routers import admin, alerts, analytics, health, proxy, servers, tool_calls, websocket
 
 
+def _run_migrations() -> None:
+    """Run alembic upgrade head (synchronous, safe to call from a thread)."""
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Run migrations in a thread executor — alembic env uses asyncio.run()
+    # internally, which would conflict with the already-running event loop.
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _run_migrations)
     await get_redis()
     yield
     # Shutdown
