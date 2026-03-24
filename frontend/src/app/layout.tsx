@@ -55,30 +55,12 @@ export const metadata: Metadata = {
     title: 'MCPHub — MCP Server Monitor',
     description:
       'The ops layer MCP was missing. Monitor, audit, alert, and discover across all MCP servers in one dashboard.',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'MCPHub — MCP Server Registry, Health Monitor & Dashboard',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'MCPHub — MCP Server Monitor',
     description:
       'The ops layer MCP was missing. Monitor, audit, alert, and discover across all MCP servers.',
-    images: ['/twitter-card.png'],
-  },
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon-32.png', type: 'image/png', sizes: '32x32' },
-      { url: '/icon-16.png', type: 'image/png', sizes: '16x16' },
-    ],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
-    shortcut: '/favicon.ico',
   },
   manifest: '/site.webmanifest',
   robots: {
