@@ -219,7 +219,7 @@ export default function ServerDetailPage({
             className="text-xs font-mono h-8 data-[state=active]:bg-secondary"
           >
             Alert Events
-            {serverAlerts.some((a) => a.state === 'firing') && (
+            {serverAlerts.some((a) => a.state === 'fired') && (
               <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-status-error inline-block animate-pulse-dot" />
             )}
           </TabsTrigger>

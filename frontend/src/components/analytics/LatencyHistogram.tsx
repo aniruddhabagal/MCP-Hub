@@ -50,6 +50,8 @@ export function LatencyHistogram() {
       label: s.tool_name ? `${s.server_name}/${s.tool_name}` : s.server_name,
     }))
 
+  const p95Max = Math.max(...data.map((d) => d.avg_latency_ms ?? 0), 1)
+
   return (
     <Card>
       <CardHeader className="pb-3">

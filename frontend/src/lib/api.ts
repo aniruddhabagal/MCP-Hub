@@ -133,6 +133,7 @@ export const deleteAlertRule = (id: string) =>
   apiFetch<void>(`/alerts/rules/${id}`, { method: 'DELETE' })
 
 export interface AlertEventsParams {
+  [key: string]: string | number | undefined
   rule_id?: string
   server_id?: string
   state?: string

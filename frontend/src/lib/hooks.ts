@@ -175,3 +175,11 @@ export function useAlertEvents(params: api.AlertEventsParams = {}) {
     queryFn: () => api.getAlertEvents(params),
   })
 }
+
+export function useEvaluateAlerts() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: api.evaluateAlerts,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+  })
+}
