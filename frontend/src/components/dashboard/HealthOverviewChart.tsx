@@ -62,19 +62,19 @@ export function HealthOverviewChart() {
   }
 
   return (
-    <Card>
+    <Card className="h-[304px] flex flex-col">
       <CardHeader>
         <CardTitle>Server Uptime</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 min-h-0 flex flex-col">
         {isLoading ? (
-          <div className="space-y-2 h-48 flex flex-col justify-end">
+          <div className="space-y-2 flex-1 flex flex-col justify-end">
             {[60, 90, 40, 75, 55].map((h, i) => (
               <Skeleton key={i} className="w-full" style={{ height: `${h}%` }} />
             ))}
           </div>
         ) : chartData.length === 0 ? (
-          <div className="h-48 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <p className="text-muted-foreground text-sm font-mono">
                 No servers probed yet
@@ -85,7 +85,7 @@ export function HealthOverviewChart() {
             </div>
           </div>
         ) : (
-          <div className="h-48">
+          <div className="flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}

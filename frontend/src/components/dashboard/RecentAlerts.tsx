@@ -12,7 +12,7 @@ export function RecentAlerts() {
   const { data: events, isLoading } = useAlertEvents({ limit: 8 })
 
   return (
-    <Card className="flex flex-col">
+    <Card className="h-[304px] flex flex-col">
       <CardHeader className="flex-row items-center justify-between pb-3">
         <CardTitle className="flex items-center gap-2">
           <AlertTriangle className="w-3.5 h-3.5" />
@@ -25,9 +25,9 @@ export function RecentAlerts() {
           View all <ArrowRight className="w-3 h-3" />
         </Link>
       </CardHeader>
-      <CardContent className="flex-1">
+      <CardContent className="flex-1 min-h-0 flex flex-col">
         {isLoading ? (
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
                 <Skeleton className="h-4 w-4 rounded-full" />
@@ -37,7 +37,7 @@ export function RecentAlerts() {
             ))}
           </div>
         ) : !events || events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
             <div className="w-10 h-10 rounded-full bg-status-healthy/10 border border-status-healthy/20 flex items-center justify-center mb-3">
               <AlertTriangle className="w-4 h-4 text-status-healthy" />
             </div>
@@ -49,7 +49,7 @@ export function RecentAlerts() {
             </p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-1 flex-1 min-h-0 overflow-y-auto">
             {events.map((event) => (
               <div
                 key={event.id}
