@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { LandingPage } from '@/components/landing/LandingPage'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mcphub.vercel.app'
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mcp-hub.aniruddha.fyi'
 
 export const metadata: Metadata = {
   title: 'MCPHub — MCP Server Registry, Health Monitor & Dashboard',
