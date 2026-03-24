@@ -132,6 +132,7 @@ All under `/api/v1`:
 
 | Page | Key components |
 |---|---|
+| `/` | Landing page — hero, problem, agents, architecture, CTA (Lenis + GSAP scroll) |
 | `/dashboard` | StatsCards, HealthOverviewChart, RecentAlerts, TopToolsWidget |
 | `/servers` | ServerTable, RegisterServerModal |
 | `/servers/[id]` | HealthTimeline, UptimeCalendar, tool calls tab, alerts tab |
@@ -239,6 +240,7 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] E2E tests (Playwright)
 - [x] Deploy to Vercel + Neon + Upstash
 - [x] README
+- [x] Landing page at `/` with Lenis + GSAP scroll animations
 
 ---
 

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { IBM_Plex_Mono, IBM_Plex_Sans, Instrument_Serif } from 'next/font/google'
-import { Sidebar } from '@/components/layout/Sidebar'
+import { LayoutShell } from '@/components/layout/LayoutShell'
 import { Providers } from './providers'
 import './globals.css'
 
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     template: '%s · MCPHub',
   },
   description:
-    'Central dashboard to discover, monitor health, track tool calls, and audit analytics across all MCP servers.',
+    'The ops layer MCP was missing. Discover, monitor health, track tool calls, and audit analytics across all MCP servers.',
 }
 
 export default function RootLayout({
@@ -44,10 +44,7 @@ export default function RootLayout({
     >
       <body>
         <Providers>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="ml-56 flex-1 min-w-0">{children}</main>
-          </div>
+          <LayoutShell>{children}</LayoutShell>
         </Providers>
       </body>
     </html>
