@@ -1,6 +1,8 @@
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
@@ -11,13 +13,18 @@ from app.config import settings
 from app.redis_client import close_redis, get_redis
 from app.routers import admin, alerts, analytics, health, proxy, servers, tool_calls, websocket
 
+logger = logging.getLogger(__name__)
+
 # Vercel serverless does not support persistent WebSocket connections
 _WEBSOCKET_ENABLED = not os.environ.get("VERCEL")
+
+# Resolve alembic.ini relative to this file so it works regardless of CWD
+_ALEMBIC_INI = str(Path(__file__).parent.parent / "alembic.ini")
 
 
 def _run_migrations() -> None:
     """Run alembic upgrade head (synchronous, safe to call from a thread)."""
-    alembic_cfg = Config("alembic.ini")
+    alembic_cfg = Config(_ALEMBIC_INI)
     command.upgrade(alembic_cfg, "head")
 
 
@@ -25,11 +32,18 @@ def _run_migrations() -> None:
 async def lifespan(app: FastAPI):
     # Run migrations in a thread executor — alembic env uses asyncio.run()
     # internally, which would conflict with the already-running event loop.
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _run_migrations)
-    await get_redis()
+    try:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _run_migrations)
+    except Exception:
+        logger.exception("Alembic migration failed — continuing startup")
+
+    try:
+        await get_redis()
+    except Exception:
+        logger.exception("Redis connection failed — continuing startup")
+
     yield
-    # Shutdown
     await close_redis()
 
 
