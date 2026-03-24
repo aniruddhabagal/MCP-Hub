@@ -90,31 +90,53 @@ export function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     let lenis: any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let ctx: any
+    let gsapRef: any
+    let rafCb: ((t: number) => void) | null = null
+    let cancelled = false
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const init = async () => {
       const Lenis = (await import('lenis')).default
       const { gsap } = await import('gsap')
       const { ScrollTrigger } = await import('gsap/ScrollTrigger')
 
+      // Guard: if React strict-mode already unmounted us while we were
+      // awaiting the dynamic imports, bail out — don't create orphaned
+      // Lenis / GSAP instances.
+      if (cancelled) return
+
+      gsapRef = gsap
       gsap.registerPlugin(ScrollTrigger)
 
-      lenis = new Lenis({ lerp: 0.08, smoothWheel: true })
+      // autoRaf: false — GSAP's ticker drives Lenis; without this flag
+      // Lenis also runs its own RAF loop → double-update conflicts.
+      lenis = new Lenis({ lerp: 0.08, smoothWheel: true, autoRaf: false })
       lenis.on('scroll', ScrollTrigger.update)
-      gsap.ticker.add((time: number) => lenis.raf(time * 1000))
+
+      rafCb = (time: number) => lenis.raf(time * 1000)
+      gsap.ticker.add(rafCb)
       gsap.ticker.lagSmoothing(0)
 
       ctx = gsap.context(() => {
         // ── Hero entrance ────────────────────────────────────────
+        // set() + to() instead of from() — explicit start & end values
+        // so React strict-mode double-fire can't read a mid-animation
+        // intermediate value as the target.
+        gsap.set('.hero-tag', { opacity: 0, y: 16 })
+        gsap.set('.hero-word', { opacity: 0, y: 80 })
+        gsap.set('.hero-desc', { opacity: 0, y: 24 })
+        gsap.set('.hero-cta > *', { opacity: 0, y: 20 })
+        gsap.set('.hero-preview', { opacity: 0, y: 50 })
+
         const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
-        tl.from('.hero-tag', { y: 16, opacity: 0, duration: 0.6 }, 0.15)
-          .from('.hero-word', { y: 80, opacity: 0, duration: 1, stagger: 0.07 }, 0.35)
-          .from('.hero-desc', { y: 24, opacity: 0, duration: 0.7 }, '-=0.65')
-          .from('.hero-cta > *', { y: 20, opacity: 0, duration: 0.6, stagger: 0.12 }, '-=0.45')
-          .from('.hero-preview', { y: 50, opacity: 0, duration: 1, ease: 'power2.out' }, '-=0.7')
+        tl.to('.hero-tag', { opacity: 1, y: 0, duration: 0.6 }, 0.15)
+          .to('.hero-word', { opacity: 1, y: 0, duration: 1, stagger: 0.07 }, 0.35)
+          .to('.hero-desc', { opacity: 1, y: 0, duration: 0.7 }, '-=0.65')
+          .to('.hero-cta > *', { opacity: 1, y: 0, duration: 0.6, stagger: 0.12 }, '-=0.45')
+          .to('.hero-preview', { opacity: 1, y: 0, duration: 1, ease: 'power2.out' }, '-=0.7')
 
         // ── Parallax orb ─────────────────────────────────────────
         gsap.to('.deco-orb', {
@@ -128,12 +150,13 @@ export function LandingPage() {
           ease: 'none',
         })
 
-        // ── Generic reveal-up ────────────────────────────────────
+        // ── Scroll reveals: set() + to() ─────────────────────────
         gsap.utils.toArray<HTMLElement>('.reveal-up').forEach((el) => {
-          gsap.from(el, {
+          gsap.set(el, { opacity: 0, y: 50 })
+          gsap.to(el, {
             scrollTrigger: { trigger: el, start: 'top 83%' },
-            y: 50,
-            opacity: 0,
+            opacity: 1,
+            y: 0,
             duration: 0.85,
             ease: 'power3.out',
           })
@@ -141,10 +164,12 @@ export function LandingPage() {
 
         // ── Stagger containers ───────────────────────────────────
         gsap.utils.toArray<HTMLElement>('.reveal-stagger').forEach((el) => {
-          gsap.from(el.querySelectorAll('.stagger-child'), {
+          const children = el.querySelectorAll('.stagger-child')
+          gsap.set(children, { opacity: 0, y: 60 })
+          gsap.to(children, {
             scrollTrigger: { trigger: el, start: 'top 76%' },
-            y: 60,
-            opacity: 0,
+            opacity: 1,
+            y: 0,
             duration: 0.8,
             stagger: 0.1,
             ease: 'power3.out',
@@ -153,9 +178,10 @@ export function LandingPage() {
 
         // ── Clip-path wipe on section labels ─────────────────────
         gsap.utils.toArray<HTMLElement>('.clip-reveal').forEach((el) => {
-          gsap.from(el, {
+          gsap.set(el, { clipPath: 'inset(0 100% 0 0)' })
+          gsap.to(el, {
             scrollTrigger: { trigger: el, start: 'top 82%' },
-            clipPath: 'inset(0 100% 0 0)',
+            clipPath: 'inset(0 0% 0 0)',
             duration: 0.9,
             ease: 'power3.inOut',
           })
@@ -166,6 +192,8 @@ export function LandingPage() {
     init()
 
     return () => {
+      cancelled = true
+      if (rafCb && gsapRef) gsapRef.ticker.remove(rafCb)
       if (lenis) lenis.destroy()
       if (ctx) ctx.revert()
     }
