@@ -374,11 +374,11 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Config: `jwt_access_token_expire_minutes`, `jwt_refresh_token_expire_days`, `superadmin_emails`
 
 ### Week 10 — Multi-Tenant: Auth + Workspace Routers
-- [ ] Auth schemas (`schemas/auth.py`) + workspace schemas (`schemas/workspace.py`)
-- [ ] Auth router: signup, login, refresh, me, switch-workspace, accept-invite
-- [ ] Workspaces router: CRUD, members, invites, API keys
-- [ ] Super admin router: platform overview, all workspaces/users, impersonate
-- [ ] Register new routers in `main.py`
+- [x] Auth schemas (`schemas/auth.py`) + workspace schemas (`schemas/workspace.py`)
+- [x] Auth router: signup, login, refresh, me, switch-workspace, accept-invite
+- [x] Workspaces router: CRUD, members, invites, API keys
+- [x] Super admin router: platform overview, all workspaces/users, impersonate
+- [x] Register new routers in `main.py`
 
 ### Week 11 — Multi-Tenant: Tenant-Scope Existing Endpoints
 - [ ] Add auth deps + workspace filter to all 7 existing routers
