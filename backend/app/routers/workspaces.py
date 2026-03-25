@@ -13,6 +13,7 @@ from app.database import get_db
 from app.dependencies.auth import get_current_workspace, require_role
 from app.models.user import User
 from app.models.workspace import ApiKey, Workspace, WorkspaceInvite, WorkspaceMember
+from app.utils.email import send_invite_email
 from app.schemas.workspace import (
     ApiKeyCreateRequest,
     ApiKeyResponse,
@@ -181,10 +182,24 @@ async def invite_member(
     db: AsyncSession = Depends(get_db),
 ):
     user, _, _ = ctx
-    await _resolve_workspace(workspace_id, ctx, db)
+    ws = await _resolve_workspace(workspace_id, ctx, db)
 
     if body.role not in ("admin", "member"):
         raise HTTPException(status_code=400, detail="Role must be admin or member")
+
+    # Revoke any existing pending invite for the same email + workspace
+    existing_invite_result = await db.execute(
+        select(WorkspaceInvite).where(
+            WorkspaceInvite.workspace_id == workspace_id,
+            WorkspaceInvite.email == body.email.lower(),
+            WorkspaceInvite.accepted_at.is_(None),
+            WorkspaceInvite.expires_at > datetime.now(timezone.utc),
+        )
+    )
+    existing_invite = existing_invite_result.scalar_one_or_none()
+    if existing_invite:
+        await db.delete(existing_invite)
+        await db.flush()
 
     token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
@@ -199,6 +214,15 @@ async def invite_member(
     )
     db.add(invite)
     await db.flush()
+
+    # Send invite email (fire-and-forget)
+    await send_invite_email(
+        to_email=body.email.lower(),
+        workspace_name=ws.name,
+        invite_token=token,
+        role=body.role,
+        invited_by_name=user.display_name,
+    )
 
     return InviteResponse(
         id=invite.id,

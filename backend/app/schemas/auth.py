@@ -8,6 +8,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     display_name: str | None = None
     password: str
+    invite_token: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -48,10 +49,19 @@ class WorkspaceSummary(BaseModel):
     role: str  # owner | admin | member
 
 
+class PendingInviteResponse(BaseModel):
+    token: str
+    workspace_name: str
+    workspace_id: UUID
+    role: str
+    expires_at: datetime
+
+
 class MeResponse(BaseModel):
     user: UserResponse
     workspaces: list[WorkspaceSummary]
     current_workspace: WorkspaceSummary
+    pending_invites: list[PendingInviteResponse] = []
 
 
 class SwitchWorkspaceRequest(BaseModel):

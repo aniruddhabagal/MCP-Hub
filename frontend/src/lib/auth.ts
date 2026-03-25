@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import type { MeResponse, TokenResponse, User, Workspace, WorkspaceRole } from './types'
+import type { MeResponse, PendingInvite, TokenResponse, User, Workspace, WorkspaceRole } from './types'
 import {
   decodeJwtPayload,
   getAccessToken,
@@ -42,10 +42,12 @@ export interface AuthState {
   isSuperAdmin: boolean
   isAuthenticated: boolean
   isLoading: boolean
+  pendingInvites: PendingInvite[]
   login: (email: string, password: string) => Promise<void>
-  signup: (email: string, displayName: string, password: string) => Promise<void>
+  signup: (email: string, displayName: string, password: string, inviteToken?: string) => Promise<void>
   logout: () => void
   switchWorkspace: (workspaceId: string) => Promise<void>
+  acceptInvite: (token: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -81,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [role, setRole] = useState<WorkspaceRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
 
   // ── Refresh token fn (registered in token-store for api.ts to call) ─────────
   const refresh = useCallback(async (): Promise<string | null> => {
@@ -109,12 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await fetchRaw<MeResponse>('/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       })
-      // Backend returns { user: {...}, workspaces: [...], current_workspace: {...} }
       setUser(data.user)
       const cw = data.current_workspace
       setWorkspace({ id: cw.id, name: cw.name, slug: cw.slug, created_at: '' })
       setRole(cw.role)
       setWorkspaces(data.workspaces.map((w) => ({ id: w.id, name: w.name, slug: w.slug, created_at: '' })))
+      setPendingInvites(data.pending_invites ?? [])
     } catch {
       // session invalid — clear
       setAccessToken(null)
@@ -129,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setWorkspace(DEMO_WORKSPACE)
       setWorkspaces([DEMO_WORKSPACE])
       setRole('owner')
+      setPendingInvites([])
       setIsLoading(false)
       return
     }
@@ -144,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setWorkspace(null)
         setWorkspaces([])
         setRole(null)
+        setPendingInvites([])
       }
       setIsLoading(false)
     }
@@ -163,10 +168,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadMe(data.access_token)
   }, [loadMe])
 
-  const signup = useCallback(async (email: string, displayName: string, password: string) => {
+  const signup = useCallback(async (email: string, displayName: string, password: string, inviteToken?: string) => {
+    const body: Record<string, string> = { email, display_name: displayName, password }
+    if (inviteToken) body.invite_token = inviteToken
     const data = await fetchRaw<TokenResponse>('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, display_name: displayName, password }),
+      body: JSON.stringify(body),
     })
     setAccessToken(data.access_token)
     localStorage.setItem(REFRESH_KEY, data.refresh_token)
@@ -181,6 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setWorkspace(null)
     setWorkspaces([])
     setRole(null)
+    setPendingInvites([])
   }, [])
 
   const switchWorkspace = useCallback(async (workspaceId: string) => {
@@ -193,6 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ workspace_id: workspaceId }),
       })
       setAccessToken(data.access_token)
+      localStorage.setItem(REFRESH_KEY, data.refresh_token)
       setRole(getRoleFromToken(data.access_token))
       const ws = workspaces.find((w) => w.id === workspaceId)
       if (ws) setWorkspace(ws)
@@ -200,6 +209,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
   }, [workspaces])
+
+  const acceptInvite = useCallback(async (token: string) => {
+    const accessToken = getAccessToken()
+    if (!accessToken) throw new Error('Not authenticated')
+    const data = await fetchRaw<TokenResponse>(`/auth/accept-invite/${token}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    setAccessToken(data.access_token)
+    localStorage.setItem(REFRESH_KEY, data.refresh_token)
+    setRole(getRoleFromToken(data.access_token))
+    await loadMe(data.access_token)
+  }, [loadMe])
 
   const value: AuthState = {
     user,
@@ -209,10 +231,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isSuperAdmin: user?.is_superadmin ?? false,
     isAuthenticated: !!user,
     isLoading,
+    pendingInvites,
     login,
     signup,
     logout,
     switchWorkspace,
+    acceptInvite,
   }
 
   return React.createElement(AuthContext.Provider, { value }, children)

@@ -404,21 +404,21 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Update demo data with mock user/workspace objects
 
 ### Week 14 — Invite Flow + Workspace UX Fixes
-- [ ] Add `resend` to `requirements.txt` + `resend_api_key` / `frontend_url` to `config.py` + `.env.example`
-- [ ] `app/utils/email.py` — `send_invite_email()` via Resend SDK (`MCPHub <contact@mail.aniruddha.fyi>`), fire-and-forget
-- [ ] Alembic migration `0003_user_last_workspace.py` — add `last_workspace_id` FK column to `users`
-- [ ] `schemas/auth.py` — add `PendingInviteResponse`, `invite_token` to `SignupRequest`, `pending_invites` to `MeResponse`
-- [ ] `routers/auth.py` — signup auto-accepts invite token; login/refresh prefer last_workspace_id → org workspace → owned; switch-workspace updates last_workspace_id; accept-invite handles role upgrade; `/me` returns pending invites
-- [ ] `routers/workspaces.py` — send invite email on creation; revoke duplicate pending invite before re-inviting
-- [ ] `lib/types.ts` — add `PendingInvite` interface; update `MeResponse` with `pending_invites`
-- [ ] `lib/api.ts` — fix `apiAcceptInvite` return type to `TokenResponse`
-- [ ] `lib/auth.ts` — add `pendingInvites` state, `acceptInvite()` method, `inviteToken` param to `signup()`
-- [ ] `LoginForm.tsx` — read `?next=` param, redirect after login, pass `next` through to signup link; wrap in `<Suspense>`
-- [ ] `SignupForm.tsx` — read `?next=` param, extract invite token, pass to `signup()`; wrap in `<Suspense>`
-- [ ] `invite/[token]/page.tsx` — use `auth.acceptInvite()` instead of raw API call to store returned tokens
-- [ ] `PendingInviteBanner.tsx` — persistent per-invite banner on dashboard with Accept / Dismiss
-- [ ] `PendingInviteModal.tsx` — one-time modal on first login with pending invites (sessionStorage flag); uses shadcn Dialog
-- [ ] `dashboard/page.tsx` — mount `PendingInviteModal` + `PendingInviteBanner`
+- [x] Add `resend` to `requirements.txt` + `resend_api_key` / `frontend_url` to `config.py` + `.env.example`
+- [x] `app/utils/email.py` — `send_invite_email()` via Resend SDK (`MCPHub <contact@mail.aniruddha.fyi>`), fire-and-forget
+- [x] Alembic migration `0003_user_last_workspace.py` — add `last_workspace_id` FK column to `users`
+- [x] `schemas/auth.py` — add `PendingInviteResponse`, `invite_token` to `SignupRequest`, `pending_invites` to `MeResponse`
+- [x] `routers/auth.py` — signup auto-accepts invite token; login/refresh prefer last_workspace_id → org workspace → owned; switch-workspace updates last_workspace_id; accept-invite handles role upgrade; `/me` returns pending invites
+- [x] `routers/workspaces.py` — send invite email on creation; revoke duplicate pending invite before re-inviting
+- [x] `lib/types.ts` — add `PendingInvite` interface; update `MeResponse` with `pending_invites`
+- [x] `lib/api.ts` — fix `apiAcceptInvite` return type to `TokenResponse`
+- [x] `lib/auth.ts` — add `pendingInvites` state, `acceptInvite()` method, `inviteToken` param to `signup()`
+- [x] `LoginForm.tsx` — read `?next=` param, redirect after login, pass `next` through to signup link; wrap in `<Suspense>`
+- [x] `SignupForm.tsx` — read `?next=` param, extract invite token, pass to `signup()`; wrap in `<Suspense>`
+- [x] `invite/[token]/page.tsx` — use `auth.acceptInvite()` instead of raw API call to store returned tokens
+- [x] `PendingInviteBanner.tsx` — persistent per-invite banner on dashboard with Accept / Dismiss
+- [x] `PendingInviteModal.tsx` — one-time modal on first login with pending invites (sessionStorage flag); uses shadcn Dialog
+- [x] `dashboard/page.tsx` — mount `PendingInviteModal` + `PendingInviteBanner`
 
 ---
 

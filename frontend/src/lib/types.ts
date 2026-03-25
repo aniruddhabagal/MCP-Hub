@@ -247,10 +247,19 @@ export interface WorkspaceSummary {
   role: WorkspaceRole
 }
 
+export interface PendingInvite {
+  token: string
+  workspace_name: string
+  workspace_id: string
+  role: 'admin' | 'member'
+  expires_at: string
+}
+
 export interface MeResponse {
   user: User
   workspaces: WorkspaceSummary[]
   current_workspace: WorkspaceSummary
+  pending_invites?: PendingInvite[]
 }
 
 export interface WorkspaceCreate {

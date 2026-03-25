@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Activity } from 'lucide-react'
 import { LoginForm } from '@/components/auth/LoginForm'
 
@@ -82,7 +83,7 @@ export default function LoginPage() {
             <h1 className="font-serif italic text-2xl text-foreground mb-1.5">Welcome back</h1>
             <p className="text-sm text-muted-foreground">Sign in to your workspace</p>
           </div>
-          <LoginForm />
+          <Suspense><LoginForm /></Suspense>
         </div>
       </div>
     </div>

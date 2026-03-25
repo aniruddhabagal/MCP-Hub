@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Activity, CheckCircle, Loader2, XCircle } from 'lucide-react'
-import { apiAcceptInvite } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -13,7 +12,7 @@ type State = 'idle' | 'loading' | 'success' | 'error'
 export default function InvitePage() {
   const params = useParams()
   const router = useRouter()
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, acceptInvite } = useAuth()
   const token = params.token as string
 
   const [state, setState] = useState<State>('idle')
@@ -28,7 +27,7 @@ export default function InvitePage() {
     const accept = async () => {
       setState('loading')
       try {
-        await apiAcceptInvite(token)
+        await acceptInvite(token)
         setState('success')
         setTimeout(() => router.push('/dashboard'), 2000)
       } catch (err) {
@@ -37,7 +36,7 @@ export default function InvitePage() {
       }
     }
     accept()
-  }, [isAuthenticated, isLoading, token, state, router])
+  }, [isAuthenticated, isLoading, token, state, router, acceptInvite])
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">

@@ -15,6 +15,7 @@ from app.models.workspace import Workspace, WorkspaceInvite, WorkspaceMember
 from app.schemas.auth import (
     LoginRequest,
     MeResponse,
+    PendingInviteResponse,
     RefreshRequest,
     SignupRequest,
     SwitchWorkspaceRequest,
@@ -32,6 +33,9 @@ from app.utils.security import (
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 _bearer = HTTPBearer(auto_error=False)
+
+# Role hierarchy for invite-based upgrades (owner cannot be assigned via invite)
+_ROLE_RANK = {"member": 0, "admin": 1}
 
 
 def _is_superadmin_email(email: str) -> bool:
@@ -60,6 +64,29 @@ async def _get_user_workspaces(user_id: uuid.UUID, db: AsyncSession) -> list[Wor
     ]
 
 
+def _pick_workspace(
+    workspaces: list[WorkspaceSummary],
+    last_workspace_id: uuid.UUID | None,
+) -> WorkspaceSummary:
+    """Smart workspace selection order:
+    1. last_workspace_id (if still a member)
+    2. An org workspace (role != owner, i.e. user was invited)
+    3. Owned workspace
+    4. First workspace
+    """
+    if last_workspace_id:
+        last = next((w for w in workspaces if w.id == last_workspace_id), None)
+        if last:
+            return last
+    org = next((w for w in workspaces if w.role != "owner"), None)
+    if org:
+        return org
+    owned = next((w for w in workspaces if w.role == "owner"), None)
+    if owned:
+        return owned
+    return workspaces[0]
+
+
 @router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(select(User).where(User.email == body.email.lower()))
@@ -76,7 +103,7 @@ async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.flush()
 
-    # Create personal workspace
+    # Always create personal workspace as a safety net
     base_slug = _slugify(body.display_name or body.email.split("@")[0])
     slug = base_slug
     counter = 1
@@ -88,22 +115,53 @@ async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)):
         counter += 1
 
     workspace_name = f"{body.display_name or body.email.split('@')[0]}'s Workspace"
-    workspace = Workspace(name=workspace_name, slug=slug)
-    db.add(workspace)
+    personal_ws = Workspace(name=workspace_name, slug=slug)
+    db.add(personal_ws)
     await db.flush()
 
     member = WorkspaceMember(
-        workspace_id=workspace.id,
+        workspace_id=personal_ws.id,
         user_id=user.id,
         role="owner",
     )
     db.add(member)
     await db.flush()
 
+    # If invite_token provided, try to auto-accept
+    target_ws_id = personal_ws.id
+    target_role = "owner"
+
+    if body.invite_token:
+        invite_result = await db.execute(
+            select(WorkspaceInvite).where(WorkspaceInvite.token == body.invite_token)
+        )
+        invite = invite_result.scalar_one_or_none()
+        if (
+            invite
+            and invite.accepted_at is None
+            and invite.expires_at > datetime.now(timezone.utc)
+            and invite.email.lower() == user.email.lower()
+        ):
+            # Auto-accept: add membership to invited workspace
+            invited_member = WorkspaceMember(
+                workspace_id=invite.workspace_id,
+                user_id=user.id,
+                role=invite.role,
+            )
+            db.add(invited_member)
+            invite.accepted_at = datetime.now(timezone.utc)
+            await db.flush()
+
+            target_ws_id = invite.workspace_id
+            target_role = invite.role
+
+    user.last_workspace_id = target_ws_id
+    await db.flush()
+
     access_token = create_access_token(
         user_id=user.id,
-        workspace_id=workspace.id,
-        role="owner",
+        workspace_id=target_ws_id,
+        role=target_role,
         is_superadmin=is_superadmin,
     )
     refresh_token = create_refresh_token(user.id)
@@ -128,8 +186,10 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not workspaces:
         raise HTTPException(status_code=500, detail="User has no workspaces")
 
-    # Prefer owned workspace, else first
-    ws = next((w for w in workspaces if w.role == "owner"), workspaces[0])
+    ws = _pick_workspace(workspaces, user.last_workspace_id)
+    user.last_workspace_id = ws.id
+    await db.flush()
+
     access_token = create_access_token(
         user_id=user.id,
         workspace_id=ws.id,
@@ -163,7 +223,10 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
     if not workspaces:
         raise HTTPException(status_code=500, detail="User has no workspaces")
 
-    ws = next((w for w in workspaces if w.role == "owner"), workspaces[0])
+    ws = _pick_workspace(workspaces, user.last_workspace_id)
+    user.last_workspace_id = ws.id
+    await db.flush()
+
     access_token = create_access_token(
         user_id=user.id,
         workspace_id=ws.id,
@@ -207,6 +270,27 @@ async def me(
     if not current:
         raise HTTPException(status_code=500, detail="User has no workspaces")
 
+    # Pending invites for this user's email
+    pending_result = await db.execute(
+        select(WorkspaceInvite, Workspace)
+        .join(Workspace, WorkspaceInvite.workspace_id == Workspace.id)
+        .where(
+            WorkspaceInvite.email == user.email,
+            WorkspaceInvite.accepted_at.is_(None),
+            WorkspaceInvite.expires_at > datetime.now(timezone.utc),
+        )
+    )
+    pending_invites = [
+        PendingInviteResponse(
+            token=inv.token,
+            workspace_name=ws.name,
+            workspace_id=inv.workspace_id,
+            role=inv.role,
+            expires_at=inv.expires_at,
+        )
+        for inv, ws in pending_result.all()
+    ]
+
     return MeResponse(
         user=UserResponse(
             id=user.id,
@@ -218,6 +302,7 @@ async def me(
         ),
         workspaces=workspaces,
         current_workspace=current,
+        pending_invites=pending_invites,
     )
 
 
@@ -262,6 +347,9 @@ async def switch_workspace(
             raise HTTPException(status_code=403, detail="Not a member of this workspace")
         role = member.role
 
+    user.last_workspace_id = workspace.id
+    await db.flush()
+
     access_token = create_access_token(
         user_id=user.id,
         workspace_id=workspace.id,
@@ -304,23 +392,38 @@ async def accept_invite(
     if invite.email.lower() != user.email.lower():
         raise HTTPException(status_code=403, detail="Invite is for a different email address")
 
-    # Check not already a member
-    existing_member = await db.execute(
+    # Check if already a member — handle role upgrade
+    existing_member_result = await db.execute(
         select(WorkspaceMember).where(
             WorkspaceMember.workspace_id == invite.workspace_id,
             WorkspaceMember.user_id == user.id,
         )
     )
-    if existing_member.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Already a member of this workspace")
+    existing_member = existing_member_result.scalar_one_or_none()
 
-    member = WorkspaceMember(
-        workspace_id=invite.workspace_id,
-        user_id=user.id,
-        role=invite.role,
-    )
-    db.add(member)
-    invite.accepted_at = datetime.now(timezone.utc)
+    if existing_member:
+        current_rank = _ROLE_RANK.get(existing_member.role, -1)
+        invite_rank = _ROLE_RANK.get(invite.role, -1)
+        if invite_rank > current_rank:
+            # Upgrade role
+            existing_member.role = invite.role
+            invite.accepted_at = datetime.now(timezone.utc)
+            await db.flush()
+        else:
+            raise HTTPException(
+                status_code=400, detail="Already a member with equal or higher role"
+            )
+    else:
+        member = WorkspaceMember(
+            workspace_id=invite.workspace_id,
+            user_id=user.id,
+            role=invite.role,
+        )
+        db.add(member)
+        invite.accepted_at = datetime.now(timezone.utc)
+        await db.flush()
+
+    user.last_workspace_id = invite.workspace_id
     await db.flush()
 
     access_token = create_access_token(

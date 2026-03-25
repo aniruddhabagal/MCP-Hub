@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Activity } from 'lucide-react'
 import { SignupForm } from '@/components/auth/SignupForm'
 
@@ -73,7 +74,7 @@ export default function SignupPage() {
             <h1 className="font-serif italic text-2xl text-foreground mb-1.5">Create your account</h1>
             <p className="text-sm text-muted-foreground">A personal workspace is created automatically</p>
           </div>
-          <SignupForm />
+          <Suspense><SignupForm /></Suspense>
         </div>
       </div>
     </div>

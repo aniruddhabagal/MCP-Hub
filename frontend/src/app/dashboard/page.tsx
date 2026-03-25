@@ -8,6 +8,8 @@ import { HealthOverviewChart } from '@/components/dashboard/HealthOverviewChart'
 import { RecentAlerts } from '@/components/dashboard/RecentAlerts'
 import { TopToolsWidget } from '@/components/dashboard/TopToolsWidget'
 import { useProbeAll } from '@/lib/hooks'
+import { PendingInviteBanner } from '@/components/dashboard/PendingInviteBanner'
+import { PendingInviteModal } from '@/components/dashboard/PendingInviteModal'
 
 export default function DashboardPage() {
   const probeAll = useProbeAll()
@@ -24,6 +26,8 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-6 animate-fade-in">
+      <PendingInviteModal />
+      <PendingInviteBanner />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>

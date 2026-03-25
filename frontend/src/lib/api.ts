@@ -122,10 +122,10 @@ export const apiLogin = (email: string, password: string) =>
     body: JSON.stringify({ email, password }),
   })
 
-export const apiSignup = (email: string, display_name: string, password: string) =>
+export const apiSignup = (email: string, display_name: string, password: string, invite_token?: string) =>
   apiFetch<TokenResponse>('/auth/signup', {
     method: 'POST',
-    body: JSON.stringify({ email, display_name, password }),
+    body: JSON.stringify({ email, display_name, password, ...(invite_token ? { invite_token } : {}) }),
   })
 
 export const apiRefresh = (refresh_token: string) =>
@@ -143,7 +143,7 @@ export const apiSwitchWorkspace = (workspace_id: string) =>
   })
 
 export const apiAcceptInvite = (token: string) =>
-  apiFetch<{ message: string }>(`/auth/accept-invite/${token}`, { method: 'POST' })
+  apiFetch<TokenResponse>(`/auth/accept-invite/${token}`, { method: 'POST' })
 
 // ── Workspaces ────────────────────────────────────────────────────────────────
 
