@@ -11,7 +11,19 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.redis_client import close_redis, get_redis
-from app.routers import admin, alerts, analytics, health, proxy, servers, tool_calls, websocket
+from app.routers import (
+    admin,
+    alerts,
+    analytics,
+    auth,
+    health,
+    proxy,
+    servers,
+    superadmin,
+    tool_calls,
+    websocket,
+    workspaces,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +77,9 @@ app.add_middleware(
 
 API_PREFIX = "/api/v1"
 
+app.include_router(auth.router, prefix=API_PREFIX)
+app.include_router(workspaces.router, prefix=API_PREFIX)
+app.include_router(superadmin.router, prefix=API_PREFIX)
 app.include_router(servers.router, prefix=API_PREFIX)
 app.include_router(health.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)

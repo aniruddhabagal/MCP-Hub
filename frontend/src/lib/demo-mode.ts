@@ -2,9 +2,16 @@
 
 import { useSyncExternalStore } from 'react'
 import {
+  DEMO_ADMIN_ALERT_EVENTS,
+  DEMO_ADMIN_OVERVIEW,
+  DEMO_ADMIN_TOOL_CALLS,
+  DEMO_ADMIN_USERS,
+  DEMO_ADMIN_WORKSPACES,
   DEMO_ALERT_EVENTS,
   DEMO_ALERT_RULES,
+  DEMO_API_KEYS,
   DEMO_ERROR_RATES,
+  DEMO_GLOBAL_ANALYTICS,
   DEMO_HEATMAP,
   DEMO_HEALTH_CHECKS,
   DEMO_HEALTH_SUMMARY,
@@ -14,6 +21,10 @@ import {
   DEMO_SERVERS,
   DEMO_TOOL_CALLS,
   DEMO_TOP_TOOLS,
+  DEMO_USER,
+  DEMO_WORKSPACE,
+  DEMO_WORKSPACE_INVITES,
+  DEMO_WORKSPACE_MEMBERS,
 } from './demo-data'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'
@@ -105,7 +116,37 @@ type Params = Record<string, string | number | undefined>
 export function getDemoResponse(path: string, params?: Params, method = 'GET'): unknown {
   const m = method.toUpperCase()
 
-  // ── Admin endpoints (POST — return success-like results) ──────────────────
+  // ── Super admin — GET endpoints ────────────────────────────────────────────
+  if (path === '/admin/overview') return DEMO_ADMIN_OVERVIEW
+  if (path === '/admin/workspaces') return DEMO_ADMIN_WORKSPACES
+  if (path === '/admin/users') return DEMO_ADMIN_USERS
+  if (path === '/admin/tool-calls') return DEMO_ADMIN_TOOL_CALLS
+  if (path === '/admin/alerts/events') return DEMO_ADMIN_ALERT_EVENTS
+  if (path === '/admin/analytics/global') return DEMO_GLOBAL_ANALYTICS
+
+  const adminWsRe = /^\/admin\/workspaces\/([^/]+)$/.exec(path)
+  if (adminWsRe) {
+    return DEMO_ADMIN_WORKSPACES.find((w) => w.id === adminWsRe[1]) ?? DEMO_ADMIN_WORKSPACES[0]
+  }
+  const adminUserRe = /^\/admin\/users\/([^/]+)$/.exec(path)
+  if (adminUserRe) {
+    const u = DEMO_ADMIN_USERS.find((u) => u.id === adminUserRe[1]) ?? DEMO_ADMIN_USERS[0]
+    return {
+      ...u,
+      workspaces: [{ id: 'demo-ws-001', name: 'Acme Corp', slug: 'acme-corp', role: 'owner' }],
+    }
+  }
+  const adminImpRe = /^\/admin\/impersonate\/([^/]+)$/.exec(path)
+  if (adminImpRe) {
+    return {
+      access_token: 'demo-impersonation-token',
+      token_type: 'bearer',
+      impersonated_user_id: adminImpRe[1],
+      workspace_id: 'demo-ws-001',
+    }
+  }
+
+  // ── Admin action endpoints (POST — return success-like results) ────────────
   if (path === '/admin/probe-all') {
     return { probed: DEMO_PROBE_RESULTS.length, results: DEMO_PROBE_RESULTS }
   }
@@ -188,6 +229,33 @@ export function getDemoResponse(path: string, params?: Params, method = 'GET'): 
     if (params?.limit)     events = events.slice(0, Number(params.limit))
     return events
   }
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  if (path === '/auth/me') {
+    return {
+      ...DEMO_USER,
+      workspaces: [{ ...DEMO_WORKSPACE, role: 'owner' }],
+    }
+  }
+
+  // ── Workspace members ─────────────────────────────────────────────────────
+  const wsMembers = /^\/workspaces\/([^/]+)\/members$/.exec(path)
+  if (wsMembers) return DEMO_WORKSPACE_MEMBERS
+
+  // ── Workspace invites ─────────────────────────────────────────────────────
+  const wsInvites = /^\/workspaces\/([^/]+)\/invites$/.exec(path)
+  if (wsInvites) return DEMO_WORKSPACE_INVITES
+
+  // ── API keys ──────────────────────────────────────────────────────────────
+  const wsApiKeys = /^\/workspaces\/([^/]+)\/api-keys$/.exec(path)
+  if (wsApiKeys) return DEMO_API_KEYS
+
+  // ── Workspace detail ──────────────────────────────────────────────────────
+  const wsDetail = /^\/workspaces\/([^/]+)$/.exec(path)
+  if (wsDetail) return DEMO_WORKSPACE
+
+  // ── Workspaces list ───────────────────────────────────────────────────────
+  if (path === '/workspaces') return [DEMO_WORKSPACE]
 
   // Fallback
   return []

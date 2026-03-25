@@ -1,19 +1,59 @@
 'use client'
 
-import { useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { DemoBanner } from './DemoBanner'
 import { useDemoMode } from '@/lib/demo-mode'
+import { useAuth } from '@/lib/auth'
+
+// Routes that don't require auth and bypass the layout shell
+const PUBLIC_ROUTES = ['/login', '/signup', '/invite']
+const isPublicRoute = (path: string) =>
+  path === '/' || PUBLIC_ROUTES.some((r) => path === r || path.startsWith(r + '/'))
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const demo = useDemoMode()
+  const { isAuthenticated, isLoading } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // Auth gate — redirect unauthenticated users to /login
+  useEffect(() => {
+    if (isLoading) return
+    if (demo) return                      // demo mode always allowed
+    if (isPublicRoute(pathname)) return   // public pages always allowed
+    if (!isAuthenticated) {
+      router.replace('/login')
+    }
+  }, [isLoading, demo, isAuthenticated, pathname, router])
+
+  // Landing page — render bare (no shell)
   if (pathname === '/') {
     return <>{children}</>
+  }
+
+  // Public auth pages — render bare (no sidebar/shell)
+  if (isPublicRoute(pathname)) {
+    return <>{children}</>
+  }
+
+  // Loading state — show blank while session restores
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded border border-primary/40 bg-primary/10 flex items-center justify-center animate-pulse">
+            <div className="w-3.5 h-3.5 rounded-full bg-primary/60" />
+          </div>
+          <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em]">
+            Loading…
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -42,7 +82,6 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
           <span className="font-serif italic text-base text-foreground tracking-tight">
             MCPHub
           </span>
-          {/* Spacer to keep logo centred */}
           <div className="w-7" />
         </div>
 

@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     slack_webhook_url: str = ""
     alert_webhook_url: str = ""
     cron_secret: str = "changeme-cron-secret"
+    jwt_access_token_expire_minutes: int = 15
+    jwt_refresh_token_expire_days: int = 7
+    superadmin_emails: str = ""
 
     @property
     def origins(self) -> list[str]:

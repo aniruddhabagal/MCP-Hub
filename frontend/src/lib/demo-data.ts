@@ -1,6 +1,13 @@
 import type {
+  AdminAlertEvent,
+  AdminGlobalAnalytics,
+  AdminOverview,
+  AdminToolCall,
+  AdminUserSummary,
+  AdminWorkspaceSummary,
   AlertEvent,
   AlertRule,
+  ApiKey,
   ErrorRateStat,
   HealthCheck,
   HealthSummary,
@@ -10,6 +17,10 @@ import type {
   Server,
   ToolCall,
   TopTool,
+  User,
+  Workspace,
+  WorkspaceInvite,
+  WorkspaceMember,
 } from './types'
 
 const NOW = Date.now()
@@ -328,3 +339,226 @@ export const DEMO_PROBE_RESULTS: ProbeResult[] = [
   { server_id: 'demo-srv-005', server_name: 'notion-mcp',     status: 'unhealthy', latency_ms: null, error: 'Connection timeout after 5000ms' },
   { server_id: 'demo-srv-006', server_name: 'linear-mcp',     status: 'down',      latency_ms: null, error: 'Connection refused: ECONNREFUSED' },
 ]
+
+// ── Auth / Multi-Tenant Demo Data ─────────────────────────────────────────────
+
+export const DEMO_USER: User = {
+  id: 'demo-user-001',
+  email: 'demo@mcphub.dev',
+  display_name: 'Demo User',
+  is_superadmin: true,   // superadmin in demo so all pages are explorable
+  is_active: true,
+  created_at: ago(720),
+}
+
+export const DEMO_WORKSPACE: Workspace = {
+  id: 'demo-ws-001',
+  name: 'Acme Corp',
+  slug: 'acme-corp',
+  created_at: ago(720),
+}
+
+export const DEMO_WORKSPACE_MEMBERS: WorkspaceMember[] = [
+  {
+    id: 'demo-member-001',
+    user_id: 'demo-user-001',
+    workspace_id: 'demo-ws-001',
+    role: 'owner',
+    user_email: 'demo@mcphub.dev',
+    user_display_name: 'Demo User',
+    joined_at: ago(720),
+  },
+  {
+    id: 'demo-member-002',
+    user_id: 'demo-user-002',
+    workspace_id: 'demo-ws-001',
+    role: 'admin',
+    user_email: 'alice@acme.dev',
+    user_display_name: 'Alice Chen',
+    joined_at: ago(600),
+  },
+  {
+    id: 'demo-member-003',
+    user_id: 'demo-user-003',
+    workspace_id: 'demo-ws-001',
+    role: 'member',
+    user_email: 'bob@acme.dev',
+    user_display_name: 'Bob Patel',
+    joined_at: ago(480),
+  },
+  {
+    id: 'demo-member-004',
+    user_id: 'demo-user-004',
+    workspace_id: 'demo-ws-001',
+    role: 'member',
+    user_email: 'carol@acme.dev',
+    user_display_name: 'Carol Kim',
+    joined_at: ago(240),
+  },
+]
+
+export const DEMO_WORKSPACE_INVITES: WorkspaceInvite[] = [
+  {
+    id: 'demo-invite-001',
+    workspace_id: 'demo-ws-001',
+    email: 'dave@acme.dev',
+    role: 'member',
+    token: 'demo-invite-token-001',
+    invited_by: 'demo-user-001',
+    invited_by_email: 'demo@mcphub.dev',
+    expires_at: new Date(Date.now() + 7 * 24 * 3_600_000).toISOString(),
+    accepted_at: null,
+    created_at: agoMin(120),
+  },
+]
+
+export const DEMO_API_KEYS: ApiKey[] = [
+  {
+    id: 'demo-key-001',
+    workspace_id: 'demo-ws-001',
+    name: 'CI/CD Pipeline',
+    key_prefix: 'mhk_ci_c',
+    created_by: 'demo-user-001',
+    last_used_at: agoMin(45),
+    expires_at: null,
+    created_at: ago(168),
+  },
+  {
+    id: 'demo-key-002',
+    workspace_id: 'demo-ws-001',
+    name: 'Staging Monitor',
+    key_prefix: 'mhk_st_9',
+    created_by: 'demo-user-002',
+    last_used_at: ago(24),
+    expires_at: new Date(Date.now() + 90 * 24 * 3_600_000).toISOString(),
+    created_at: ago(336),
+  },
+]
+
+// ── Super Admin Demo Data ─────────────────────────────────────────────────────
+
+export const DEMO_ADMIN_OVERVIEW: AdminOverview = {
+  total_users: 14,
+  total_workspaces: 4,
+  total_servers: 24,
+  total_tool_calls: 18_342,
+  active_alerts: 2,
+}
+
+export const DEMO_ADMIN_WORKSPACES: AdminWorkspaceSummary[] = [
+  {
+    id: 'demo-ws-001',
+    name: 'Acme Corp',
+    slug: 'acme-corp',
+    member_count: 4,
+    server_count: 6,
+    created_at: ago(720),
+  },
+  {
+    id: 'demo-ws-002',
+    name: 'Nexus Labs',
+    slug: 'nexus-labs',
+    member_count: 3,
+    server_count: 9,
+    created_at: ago(480),
+  },
+  {
+    id: 'demo-ws-003',
+    name: 'Orbit Studio',
+    slug: 'orbit-studio',
+    member_count: 5,
+    server_count: 7,
+    created_at: ago(240),
+  },
+  {
+    id: 'demo-ws-004',
+    name: 'Sandbox',
+    slug: 'sandbox',
+    member_count: 2,
+    server_count: 2,
+    created_at: ago(48),
+  },
+]
+
+export const DEMO_ADMIN_USERS: AdminUserSummary[] = [
+  {
+    id: 'demo-user-001',
+    email: 'demo@mcphub.dev',
+    display_name: 'Demo User',
+    is_superadmin: true,
+    is_active: true,
+    workspace_count: 2,
+    created_at: ago(720),
+  },
+  {
+    id: 'demo-user-002',
+    email: 'alice@acme.dev',
+    display_name: 'Alice Chen',
+    is_superadmin: false,
+    is_active: true,
+    workspace_count: 1,
+    created_at: ago(600),
+  },
+  {
+    id: 'demo-user-003',
+    email: 'bob@acme.dev',
+    display_name: 'Bob Patel',
+    is_superadmin: false,
+    is_active: true,
+    workspace_count: 2,
+    created_at: ago(480),
+  },
+  {
+    id: 'demo-user-004',
+    email: 'carol@nexus.io',
+    display_name: 'Carol Kim',
+    is_superadmin: false,
+    is_active: true,
+    workspace_count: 1,
+    created_at: ago(360),
+  },
+  {
+    id: 'demo-user-005',
+    email: 'dave@nexus.io',
+    display_name: 'Dave Ruiz',
+    is_superadmin: false,
+    is_active: false,
+    workspace_count: 1,
+    created_at: ago(240),
+  },
+]
+
+export const DEMO_GLOBAL_ANALYTICS: AdminGlobalAnalytics = {
+  total_calls: 18_342,
+  total_errors: 1_284,
+  error_rate: 0.0699,
+  avg_latency_ms: 142.8,
+  top_tools: [
+    { tool_name: 'search_code', call_count: 4_210 },
+    { tool_name: 'send_message', call_count: 3_891 },
+    { tool_name: 'create_issue', call_count: 2_140 },
+    { tool_name: 'get_user', call_count: 1_987 },
+    { tool_name: 'list_repos', call_count: 1_544 },
+  ],
+}
+
+export const DEMO_ADMIN_TOOL_CALLS: AdminToolCall[] = DEMO_TOOL_CALLS.slice(0, 20).map((c, i) => ({
+  id: c.id,
+  tool_name: c.tool_name,
+  status: c.status,
+  duration_ms: c.duration_ms,
+  workspace_id: ['demo-ws-001', 'demo-ws-002', 'demo-ws-003'][i % 3],
+  server_id: c.server_id,
+  called_at: c.called_at,
+}))
+
+export const DEMO_ADMIN_ALERT_EVENTS: AdminAlertEvent[] = DEMO_ALERT_EVENTS.map((e, i) => ({
+  id: e.id,
+  state: e.state,
+  message: e.message,
+  value: e.value,
+  workspace_id: ['demo-ws-001', 'demo-ws-002'][i % 2],
+  rule_id: e.rule_id,
+  fired_at: e.fired_at,
+  resolved_at: e.resolved_at,
+}))

@@ -7,6 +7,7 @@ import pytest
 from app.agents.health_prober import run_probe_all
 from app.models.server import MCPServer
 from app.utils.mcp_client import ProbeResult
+from tests.conftest import TEST_WORKSPACE_ID
 
 pytestmark = pytest.mark.asyncio
 
@@ -30,6 +31,7 @@ async def test_run_probe_all_no_servers(db_session):
 async def test_run_probe_all_healthy(db_session):
     server = MCPServer(
         id=uuid.uuid4(),
+        workspace_id=TEST_WORKSPACE_ID,
         name="Mock Server",
         endpoint="http://mock.internal/mcp",
     )
@@ -48,6 +50,7 @@ async def test_run_probe_all_healthy(db_session):
 async def test_run_probe_all_down(db_session):
     server = MCPServer(
         id=uuid.uuid4(),
+        workspace_id=TEST_WORKSPACE_ID,
         name="Down Server",
         endpoint="http://down.internal/mcp",
     )
@@ -59,6 +62,32 @@ async def test_run_probe_all_down(db_session):
 
     assert results[0]["status"] == "down"
     assert server.status == "down"
+
+
+async def test_run_probe_all_workspace_scoped(db_session):
+    """Probing with a workspace_id should only probe servers in that workspace."""
+    other_ws_id = uuid.uuid4()
+    server_mine = MCPServer(
+        id=uuid.uuid4(),
+        workspace_id=TEST_WORKSPACE_ID,
+        name="Mine",
+        endpoint="http://mine.internal/mcp",
+    )
+    server_other = MCPServer(
+        id=uuid.uuid4(),
+        workspace_id=other_ws_id,
+        name="Other",
+        endpoint="http://other.internal/mcp",
+    )
+    db_session.add(server_mine)
+    db_session.add(server_other)
+    await db_session.flush()
+
+    with patch("app.agents.health_prober.probe_server", new=AsyncMock(return_value=HEALTHY_RESULT)):
+        results = await run_probe_all(db_session, workspace_id=TEST_WORKSPACE_ID)
+
+    assert len(results) == 1
+    assert results[0]["server_id"] == str(server_mine.id)
 
 
 # ── Health API endpoint tests ─────────────────────────────────────────────────

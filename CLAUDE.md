@@ -40,6 +40,102 @@ A central dashboard to discover, deploy, monitor health, track token usage, and 
 
 ---
 
+## Multi-Tenant / Team Workspace Architecture
+
+### Role & Access Model (Three Distinct Levels)
+
+There are **three distinct levels** of access in the system. Each has its own scope, permissions, backend endpoints, and frontend pages.
+
+**Level 1: Workspace Member** — Read-only viewer within a single workspace.
+- Can view dashboard, servers, tool calls, analytics, alerts — all scoped to their workspace
+- Can switch between workspaces they belong to
+- Cannot create/edit/delete any data or manage workspace settings
+- **Sidebar**: Dashboard, Servers, Tool Calls, Analytics, Alerts
+
+**Level 2: Workspace Admin/Owner** — Full management of their own workspace.
+- `admin`: Everything except deleting workspace or changing the owner
+- `owner`: Full control including workspace deletion and role changes
+- CRUD servers, alert rules, trigger probes, manage members/invites/API keys, edit workspace settings
+- **Sidebar**: Dashboard, Servers, Tool Calls, Analytics, Alerts, **Settings**
+- **`/settings` page** with tabs: General, Members, Invites, API Keys
+
+**Level 3: Super Admin** — Platform-wide management across ALL workspaces.
+- `is_superadmin` flag on User model (set via `SUPERADMIN_EMAILS` env var or toggled by another super admin)
+- Can view/manage ALL workspaces, ALL users, ALL data across the platform
+- Can impersonate users, toggle active/superadmin status, delete any workspace or user
+- Bypasses workspace membership checks — can switch into any workspace
+- **Sidebar**: Dashboard, Servers, Tool Calls, Analytics, Alerts, **Settings**, **Admin**
+- **`/admin` pages**: Platform overview, workspace deep dive, user deep dive
+
+#### Permission Matrix
+
+| Action | Member | Admin | Owner | Super Admin |
+|---|---|---|---|---|
+| View workspace data | yes | yes | yes | yes (any) |
+| CRUD servers & alert rules | — | yes | yes | yes (any) |
+| Trigger health probes | — | yes | yes | yes (any) |
+| Manage members & invites | — | yes | yes | yes (any) |
+| Change member roles | — | — | yes | yes (any) |
+| Manage API keys | — | yes | yes | yes (any) |
+| Edit workspace name/slug | — | yes | yes | yes (any) |
+| Delete workspace | — | — | yes | yes (any) |
+| View/manage ALL workspaces & users | — | — | — | yes |
+| Cross-workspace analytics & audit | — | — | — | yes |
+| Impersonate users | — | — | — | yes |
+
+### Authentication & Authorization
+
+**Custom JWT auth** (no third-party services):
+- `passlib[bcrypt]` for password hashing, `python-jose[cryptography]` for JWT
+- Access token (15 min) carries `sub` (user_id), `wid` (workspace_id), `role`, `sa` (super admin flag)
+- Refresh token (7 days) carries `sub` only
+- API key auth via `X-API-Key` header (for proxy/programmatic access)
+- Auth dependencies: `get_current_user`, `get_current_workspace`, `require_role(*roles)`, `require_superadmin`, `get_workspace_from_any_auth`
+
+### Multi-Tenant Data Model
+
+**New tables**: `users`, `workspaces`, `workspace_members`, `workspace_invites`, `api_keys`
+
+**All 6 existing tables** get `workspace_id UUID FK → workspaces.id ON DELETE CASCADE NOT NULL`:
+- `mcp_servers`, `health_checks`, `tool_calls`, `alert_rules`, `alert_events`, `analytics_snapshots`
+- Denormalized on child tables to avoid JOINs on every query
+- Every query filtered by `workspace_id` from JWT
+
+**Redis**: Cache keys prefixed with `workspace_id`, pub/sub channels scoped to `mcphub:dashboard:{workspace_id}`
+
+**WebSocket**: Authenticated via `?token=<jwt>` query param, subscribed to workspace-scoped channel
+
+**Agents**: Accept optional `workspace_id` param — when called from UI, scope to workspace; when called from cron, loop over all workspaces
+
+### New API Endpoints
+
+Auth (`/api/v1/auth`):
+- `POST /signup`, `/login`, `/refresh`, `/switch-workspace`, `/accept-invite/{token}`
+- `GET /me`
+
+Workspaces (`/api/v1/workspaces`):
+- CRUD + `/members`, `/members/invite`, `/members/{user_id}`, `/api-keys`
+
+Super Admin (`/api/v1/admin`):
+- `GET /overview`, `/workspaces`, `/users`, `/servers`, `/tool-calls`, `/alerts/events`, `/analytics/global`
+- `PATCH /workspaces/{id}`, `/users/{id}`
+- `DELETE /workspaces/{id}`, `/users/{id}`
+- `POST /impersonate/{user_id}`
+
+### New Frontend Pages
+
+| Page | Level | Purpose |
+|---|---|---|
+| `/login` | Public | Email/password login + "Try Demo" button |
+| `/signup` | Public | Registration → auto-creates personal workspace |
+| `/invite/[token]` | Public | Accept workspace invitation |
+| `/settings` | L2 (Admin/Owner) | Workspace management: general, members, invites, API keys |
+| `/admin` | L3 (Super Admin) | Platform overview: stats, all workspaces, all users, global feed |
+| `/admin/workspaces/[id]` | L3 (Super Admin) | Workspace deep dive with impersonate/delete |
+| `/admin/users/[id]` | L3 (Super Admin) | User deep dive with toggle active/superadmin, impersonate/delete |
+
+---
+
 ## Architecture Approach
 
 ### Deployment Strategy (Vercel Free Tier)
@@ -79,21 +175,22 @@ MCP-Hub/
 │   ├── alembic/                    # DB migrations
 │   ├── app/
 │   │   ├── main.py                 # FastAPI entry point
-│   │   ├── config.py               # pydantic-settings
+│   │   ├── config.py               # pydantic-settings (JWT, superadmin emails)
 │   │   ├── database.py             # SQLAlchemy async engine
 │   │   ├── redis_client.py         # Redis connection pool
-│   │   ├── models/                 # ORM models (server, health_check, tool_call, alert)
-│   │   ├── schemas/                # Pydantic schemas
-│   │   ├── routers/                # API route handlers + proxy.py
+│   │   ├── models/                 # ORM models (user, workspace, server, health_check, tool_call, alert, analytics)
+│   │   ├── schemas/                # Pydantic schemas (auth, workspace, superadmin, server, etc.)
+│   │   ├── routers/                # API route handlers (auth, workspaces, superadmin, servers, proxy, etc.)
+│   │   ├── dependencies/           # FastAPI auth dependencies (get_current_user, require_role, etc.)
 │   │   ├── agents/                 # health_prober, alert_evaluator, analytics_aggregator
 │   │   ├── services/               # Business logic layer
-│   │   └── utils/                  # mcp_client.py, notifiers.py
+│   │   └── utils/                  # mcp_client.py, notifiers.py, security.py (JWT + bcrypt)
 │   └── tests/
 ├── frontend/
 │   └── src/
-│       ├── app/                    # Next.js App Router pages
-│       ├── components/             # UI components by page
-│       └── lib/                    # API client, types, hooks
+│       ├── app/                    # Next.js App Router pages (login, signup, settings, admin, etc.)
+│       ├── components/             # UI components by page (auth, workspace, admin, layout, etc.)
+│       └── lib/                    # API client, types, hooks, auth context, demo-mode
 ├── docker-compose.yml              # Local dev environment
 └── .env.example
 ```
@@ -104,41 +201,56 @@ MCP-Hub/
 
 | Table | Purpose |
 |---|---|
-| `mcp_servers` | Server registry with status, endpoint, owner, tags |
-| `health_checks` | Time-series probe results — latency, status, error |
-| `tool_calls` | Audit log of every tool invocation through the proxy |
-| `alert_rules` | Configurable alert conditions per server or global |
-| `alert_events` | Fired/resolved alert history |
-| `analytics_snapshots` | Hourly pre-aggregated call counts, latency, error rates |
+| `users` | User accounts with email, password hash, super admin flag |
+| `workspaces` | Team workspaces with name and slug |
+| `workspace_members` | Join table: user ↔ workspace with role (owner/admin/member) |
+| `workspace_invites` | Pending email invitations with token and expiry |
+| `api_keys` | Workspace API keys for programmatic access (hashed) |
+| `mcp_servers` | Server registry with status, endpoint, owner, tags — **workspace-scoped** |
+| `health_checks` | Time-series probe results — latency, status, error — **workspace-scoped** |
+| `tool_calls` | Audit log of every tool invocation through the proxy — **workspace-scoped** |
+| `alert_rules` | Configurable alert conditions per server or global — **workspace-scoped** |
+| `alert_events` | Fired/resolved alert history — **workspace-scoped** |
+| `analytics_snapshots` | Hourly pre-aggregated call counts, latency, error rates — **workspace-scoped** |
 
 ---
 
 ## API Endpoints (summary)
 
-All under `/api/v1`:
+All under `/api/v1`. All workspace-scoped endpoints require JWT auth; workspace_id extracted from token.
 
-- `/servers` — CRUD + manual probe trigger
-- `/health/checks`, `/health/summary` — health history and uptime stats
-- `/tool-calls` — paginated audit log + direct ingestion
-- `/analytics/*` — top tools, error rates, latency, volume heatmap
-- `/alerts/rules`, `/alerts/events` — alert rule management + history
-- `/proxy/{server_id}/mcp` — transparent MCP proxy
-- `/admin/probe-all`, `/admin/evaluate-alerts` — on-demand agent triggers
-- `WS /ws/dashboard` — real-time push via WebSocket
+- `/auth/*` — signup, login, refresh, switch-workspace, accept-invite, me
+- `/workspaces/*` — workspace CRUD, member management, invites, API keys
+- `/servers` — CRUD + manual probe trigger (workspace-scoped, admin+ for mutations)
+- `/health/checks`, `/health/summary` — health history and uptime stats (workspace-scoped)
+- `/tool-calls` — paginated audit log + direct ingestion (workspace-scoped)
+- `/analytics/*` — top tools, error rates, latency, volume heatmap (workspace-scoped)
+- `/alerts/rules`, `/alerts/events` — alert rule management + history (workspace-scoped)
+- `/proxy/{server_id}/mcp` — transparent MCP proxy (JWT or API key auth)
+- `/admin/probe-all`, `/admin/evaluate-alerts` — on-demand agent triggers (JWT or cron secret)
+- `/admin/overview`, `/admin/workspaces`, `/admin/users`, etc. — super admin platform management
+- `WS /ws/dashboard?token=<jwt>` — real-time push via WebSocket (workspace-scoped channel)
 
 ---
 
 ## Frontend Pages
 
-| Page | Key components |
-|---|---|
-| `/` | Landing page — hero, problem, agents, architecture, CTA (Lenis + GSAP scroll) |
-| `/dashboard` | StatsCards, HealthOverviewChart, RecentAlerts, TopToolsWidget |
-| `/servers` | ServerTable, RegisterServerModal |
-| `/servers/[id]` | HealthTimeline, UptimeCalendar, tool calls tab, alerts tab |
-| `/tools` | ToolCallTable (paginated), ToolCallDetail drawer |
-| `/analytics` | TopToolsChart, LatencyHistogram, UsageHeatmap, CostEstimator |
-| `/alerts` | AlertRuleForm, AlertHistoryTable |
+| Page | Access | Key components |
+|---|---|---|
+| `/` | Public | Landing page — hero, problem, agents, architecture, CTA (Lenis + GSAP scroll) |
+| `/login` | Public | LoginForm, "Try Demo" button |
+| `/signup` | Public | SignupForm → auto-creates personal workspace |
+| `/invite/[token]` | Public | Accept workspace invitation |
+| `/dashboard` | L1+ | StatsCards, HealthOverviewChart, RecentAlerts, TopToolsWidget |
+| `/servers` | L1+ | ServerTable, RegisterServerModal |
+| `/servers/[id]` | L1+ | HealthTimeline, UptimeCalendar, tool calls tab, alerts tab |
+| `/tools` | L1+ | ToolCallTable (paginated), ToolCallDetail drawer |
+| `/analytics` | L1+ | TopToolsChart, LatencyHistogram, UsageHeatmap, CostEstimator |
+| `/alerts` | L1+ | AlertRuleForm, AlertHistoryTable |
+| `/settings` | L2 (Admin/Owner) | WorkspaceGeneralSettings, MemberList, InviteForm, PendingInvites, ApiKeyManager |
+| `/admin` | L3 (Super Admin) | PlatformStatsCards, AllWorkspacesTable, AllUsersTable, GlobalActivityFeed |
+| `/admin/workspaces/[id]` | L3 (Super Admin) | WorkspaceDetail — members, servers, alerts, impersonate/delete |
+| `/admin/users/[id]` | L3 (Super Admin) | UserDetail — memberships, toggle active/superadmin, impersonate/delete |
 
 **Frontend stack:** Next.js 14, Tailwind CSS, shadcn/ui, Recharts, TanStack Query, WebSocket for live updates.
 
@@ -250,6 +362,46 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] `DemoBanner` component — context-aware banner with Retry / Exit demo button
 - [x] Mutations blocked in demo mode with global toast via `MutationCache`
 - [x] Auto switch-back: 60s health-check interval restores live data when backend recovers
+
+### Week 9 — Multi-Tenant: Database + Auth Foundation
+- [x] `passlib[bcrypt]` + `python-jose[cryptography]` dependencies
+- [x] `User` ORM model (`app/models/user.py`) with `is_superadmin` flag
+- [x] `Workspace`, `WorkspaceMember`, `WorkspaceInvite`, `ApiKey` models (`app/models/workspace.py`)
+- [x] Add `workspace_id` FK to all 6 existing models
+- [x] Alembic migration `0002_multi_tenant.py` with default workspace backfill
+- [x] `security.py` — password hashing + JWT creation/decode
+- [x] `dependencies/auth.py` — `get_current_user`, `get_current_workspace`, `require_role`, `require_superadmin`
+- [x] Config: `jwt_access_token_expire_minutes`, `jwt_refresh_token_expire_days`, `superadmin_emails`
+
+### Week 10 — Multi-Tenant: Auth + Workspace Routers
+- [x] Auth schemas (`schemas/auth.py`) + workspace schemas (`schemas/workspace.py`)
+- [x] Auth router: signup, login, refresh, me, switch-workspace, accept-invite
+- [x] Workspaces router: CRUD, members, invites, API keys
+- [x] Super admin router: platform overview, all workspaces/users, impersonate
+- [x] Register new routers in `main.py`
+
+### Week 11 — Multi-Tenant: Tenant-Scope Existing Endpoints
+- [x] Add auth deps + workspace filter to all 7 existing routers
+- [x] Update agents for per-workspace operation (optional `workspace_id` param)
+- [x] Workspace-scoped Redis cache keys and pub/sub channels
+- [x] WebSocket auth via `?token=<jwt>` + workspace-scoped subscription
+- [x] Update backend tests for workspace context
+
+### Week 12 — Multi-Tenant: Frontend Auth + Workspace UI
+- [x] `AuthProvider` context + `useAuth()` hook (`lib/auth.ts`)
+- [x] Auth header injection in `apiFetch` + 401 refresh logic
+- [x] Login, signup, invite acceptance pages
+- [x] Auth gate in `LayoutShell` + demo mode compatibility
+- [x] `WorkspaceSwitcher` + `UserMenu` in Sidebar
+- [x] `/settings` page: General, Members, Invites, API Keys tabs
+
+### Week 13 — Multi-Tenant: Super Admin Dashboard + Polish
+- [x] `/admin` page: PlatformStatsCards, AllWorkspacesTable, AllUsersTable, GlobalActivityFeed
+- [x] `/admin/workspaces/[id]`: workspace deep dive with impersonate/delete
+- [x] `/admin/users/[id]`: user deep dive with toggle active/superadmin, impersonate/delete
+- [x] Admin nav item (shield icon) conditional on `is_superadmin`
+- [x] E2E tests for auth flow, tenant isolation, super admin
+- [x] Update demo data with mock user/workspace objects
 
 ---
 

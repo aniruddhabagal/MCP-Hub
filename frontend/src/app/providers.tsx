@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { WebSocketProvider } from '@/components/layout/WebSocketProvider'
 import { DemoModeError } from '@/lib/demo-mode'
+import { AuthProvider } from '@/lib/auth'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -33,9 +34,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
-      <WebSocketProvider />
-      <Toaster position="bottom-right" theme="dark" richColors />
+      <AuthProvider>
+        {children}
+        <WebSocketProvider />
+        <Toaster position="bottom-right" theme="dark" richColors />
+      </AuthProvider>
     </QueryClientProvider>
   )
 }

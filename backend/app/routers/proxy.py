@@ -1,13 +1,11 @@
-"""Transparent MCP reverse proxy.
+"""Transparent MCP reverse proxy — workspace-scoped.
 
 POST /proxy/{server_id}/mcp — forwards the raw JSON-RPC 2.0 request to the
 registered server's endpoint, logs every tools/call invocation as a ToolCall
-row, and streams the upstream response back to the caller unchanged.
+row, and streams the upstream response back unchanged.
 
-Handles the MCP Streamable HTTP transport (2025-03-26):
-- Sends an `initialize` handshake first to obtain an `mcp-session-id`.
-- Includes that session ID in all subsequent requests.
-- Unwraps SSE-encoded responses (Content-Type: text/event-stream) into plain JSON.
+Auth: JWT Bearer or X-API-Key header (get_workspace_from_any_auth).
+The server must belong to the caller's workspace.
 """
 import json
 import time
@@ -20,13 +18,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.dependencies.auth import get_workspace_from_any_auth
 from app.models.server import MCPServer
 from app.models.tool_call import ToolCall
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
 
-_INIT_TIMEOUT = 15.0   # seconds — just for the initialize handshake
-_PROXY_TIMEOUT = 120.0  # seconds — tool calls (e.g. doc search) can be slow
+_INIT_TIMEOUT = 15.0
+_PROXY_TIMEOUT = 120.0
 
 _INIT_PAYLOAD = {
     "jsonrpc": "2.0",
@@ -41,11 +40,6 @@ _INIT_PAYLOAD = {
 
 
 def _parse_sse(raw: bytes) -> bytes:
-    """Extract the first JSON payload from an SSE stream.
-
-    SSE lines look like:  data: {...}
-    Returns the raw JSON bytes, or the original bytes if parsing fails.
-    """
     try:
         text = raw.decode("utf-8", errors="replace")
         parts: list[str] = []
@@ -53,9 +47,8 @@ def _parse_sse(raw: bytes) -> bytes:
             if line.startswith("data:"):
                 parts.append(line[5:].strip())
         if parts:
-            # Each data: line may be a chunk; join and validate JSON
             combined = "".join(parts)
-            json.loads(combined)  # validate
+            json.loads(combined)
             return combined.encode("utf-8")
     except Exception:
         pass
@@ -63,7 +56,6 @@ def _parse_sse(raw: bytes) -> bytes:
 
 
 async def _get_session_id(endpoint: str) -> str | None:
-    """Fire an initialize request and return the mcp-session-id header value."""
     try:
         async with httpx.AsyncClient(timeout=_INIT_TIMEOUT) as client:
             resp = await client.post(
@@ -76,15 +68,20 @@ async def _get_session_id(endpoint: str) -> str | None:
         return None
 
 
-async def _get_server(server_id: uuid.UUID, db: AsyncSession) -> MCPServer:
+async def _get_server_in_workspace(
+    server_id: uuid.UUID,
+    workspace_id: uuid.UUID,
+    db: AsyncSession,
+) -> MCPServer:
     server = await db.get(MCPServer, server_id)
-    if server is None:
+    if server is None or server.workspace_id != workspace_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Server not found")
     return server
 
 
 async def _log_tool_call(
     db: AsyncSession,
+    workspace_id: uuid.UUID,
     server_id: uuid.UUID,
     tool_name: str,
     caller_agent: str | None,
@@ -96,6 +93,7 @@ async def _log_tool_call(
 ) -> None:
     tc = ToolCall(
         id=uuid.uuid4(),
+        workspace_id=workspace_id,
         server_id=server_id,
         tool_name=tool_name,
         caller_agent=caller_agent,
@@ -114,9 +112,10 @@ async def _log_tool_call(
 async def proxy_mcp(
     server_id: uuid.UUID,
     request: Request,
+    workspace_id: uuid.UUID = Depends(get_workspace_from_any_auth),
     db: AsyncSession = Depends(get_db),
 ):
-    server = await _get_server(server_id, db)
+    server = await _get_server_in_workspace(server_id, workspace_id, db)
 
     body_bytes = await request.body()
     try:
@@ -135,8 +134,6 @@ async def proxy_mcp(
     response_body = b""
 
     try:
-        # MCP Streamable HTTP (2025): get session ID via a separate init call
-        # so it doesn't consume the main request's timeout budget.
         upstream_headers: dict[str, str] = {"Content-Type": "application/json"}
         if method != "initialize":
             session_id = await _get_session_id(server.endpoint)
@@ -151,7 +148,6 @@ async def proxy_mcp(
             )
 
         response_body = upstream.content
-        # Unwrap SSE-encoded responses into plain JSON
         content_type = upstream.headers.get("content-type", "")
         if "text/event-stream" in content_type:
             response_body = _parse_sse(response_body)
@@ -172,6 +168,7 @@ async def proxy_mcp(
         if method == "tools/call" or method.startswith("tools/"):
             await _log_tool_call(
                 db=db,
+                workspace_id=workspace_id,
                 server_id=server_id,
                 tool_name=tool_name,
                 caller_agent=caller_agent,

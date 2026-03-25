@@ -1,7 +1,8 @@
 """Analytics Aggregator agent.
 
-Reads tool_calls from the past 24 hours, groups by server + tool,
-and writes (or updates) AnalyticsSnapshot rows for each hourly window.
+Reads tool_calls from the past 24 hours (optionally scoped to a workspace),
+groups by workspace + server + tool, and writes AnalyticsSnapshot rows for
+each hourly window.
 
 Invoked once per day via Vercel Cron (POST /api/v1/admin/aggregate-analytics).
 """
@@ -23,32 +24,39 @@ def _p95(values: list[float]) -> float | None:
     return s[idx]
 
 
-async def run_aggregate_analytics(db: AsyncSession) -> dict:
-    """Aggregate the last 24 h of tool_calls into hourly AnalyticsSnapshot rows."""
+async def run_aggregate_analytics(
+    db: AsyncSession,
+    workspace_id: uuid.UUID | None = None,
+) -> dict:
+    """Aggregate the last 24 h of tool_calls into hourly AnalyticsSnapshot rows.
+
+    If workspace_id is provided, aggregates only that workspace's data.
+    When None (cron), aggregates all workspaces.
+    """
     now = datetime.now(timezone.utc)
-    # Round down to current hour start
     window_end = now.replace(minute=0, second=0, microsecond=0)
     window_start = window_end - timedelta(hours=24)
 
     stmt = select(ToolCall).where(ToolCall.called_at >= window_start)
+    if workspace_id is not None:
+        stmt = stmt.where(ToolCall.workspace_id == workspace_id)
     result = await db.execute(stmt)
     calls = result.scalars().all()
 
     if not calls:
         return {"windows_written": 0, "snapshots": 0}
 
-    # Bucket calls into hourly windows per (server_id, tool_name)
-    # Structure: {(hour_start, server_id, tool_name): [calls]}
+    # Bucket calls into hourly windows per (workspace_id, server_id, tool_name)
     buckets: dict[tuple, list[ToolCall]] = {}
     for call in calls:
         hour = call.called_at.replace(minute=0, second=0, microsecond=0)
-        key = (hour, call.server_id, call.tool_name)
+        key = (hour, call.workspace_id, call.server_id, call.tool_name)
         buckets.setdefault(key, []).append(call)
 
     snapshots_written = 0
     windows_seen: set[datetime] = set()
 
-    for (hour_start, server_id, tool_name), bucket_calls in buckets.items():
+    for (hour_start, wid, server_id, tool_name), bucket_calls in buckets.items():
         hour_end = hour_start + timedelta(hours=1)
         windows_seen.add(hour_start)
 
@@ -59,6 +67,7 @@ async def run_aggregate_analytics(db: AsyncSession) -> dict:
 
         snap = AnalyticsSnapshot(
             id=uuid.uuid4(),
+            workspace_id=wid,
             server_id=server_id,
             tool_name=tool_name,
             window_start=hour_start,

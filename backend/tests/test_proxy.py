@@ -56,7 +56,6 @@ async def test_proxy_forwards_and_logs_tool_call(client):
 
     assert resp.status_code == 200
 
-    # Tool call should have been logged
     tc_resp = await client.get(f"/api/v1/tool-calls?server_id={server_id}")
     assert tc_resp.status_code == 200
     calls = tc_resp.json()
@@ -110,7 +109,6 @@ async def test_proxy_non_tool_call_not_logged(client):
             json=MCP_INITIALIZE_BODY,
         )
 
-    # initialize method should NOT be logged
     tc_resp = await client.get(f"/api/v1/tool-calls?server_id={server_id}")
     assert tc_resp.json() == []
 
