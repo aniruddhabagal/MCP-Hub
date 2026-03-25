@@ -10,6 +10,12 @@ import httpx
 
 PROBE_TIMEOUT = 10.0  # seconds
 
+# MCP Streamable HTTP transport (2025-03-26 spec) requires both content types in Accept.
+PROBE_HEADERS = {
+    "Content-Type": "application/json",
+    "Accept": "application/json, text/event-stream",
+}
+
 INIT_PAYLOAD = {
     "jsonrpc": "2.0",
     "id": 1,
@@ -35,10 +41,11 @@ async def probe_server(endpoint: str) -> ProbeResult:
     start = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=PROBE_TIMEOUT) as client:
-            resp = await client.post(endpoint, json=INIT_PAYLOAD)
+            resp = await client.post(endpoint, json=INIT_PAYLOAD, headers=PROBE_HEADERS)
         latency_ms = (time.perf_counter() - start) * 1000
 
-        if resp.status_code == 200:
+        # Any 2xx is healthy — servers may return 200 (JSON body) or 202 (SSE stream)
+        if 200 <= resp.status_code < 300:
             status = "healthy"
         elif resp.status_code < 500:
             status = "degraded"
