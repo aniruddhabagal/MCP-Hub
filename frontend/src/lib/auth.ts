@@ -3,7 +3,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import type { MeResponse, TokenResponse, User, Workspace, WorkspaceRole } from './types'
 import {
-  callRefreshFn,
   decodeJwtPayload,
   getAccessToken,
   registerRefreshFn,
