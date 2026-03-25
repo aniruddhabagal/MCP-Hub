@@ -388,12 +388,12 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] Update backend tests for workspace context
 
 ### Week 12 — Multi-Tenant: Frontend Auth + Workspace UI
-- [ ] `AuthProvider` context + `useAuth()` hook (`lib/auth.ts`)
-- [ ] Auth header injection in `apiFetch` + 401 refresh logic
-- [ ] Login, signup, invite acceptance pages
-- [ ] Auth gate in `LayoutShell` + demo mode compatibility
-- [ ] `WorkspaceSwitcher` + `UserMenu` in Sidebar
-- [ ] `/settings` page: General, Members, Invites, API Keys tabs
+- [x] `AuthProvider` context + `useAuth()` hook (`lib/auth.ts`)
+- [x] Auth header injection in `apiFetch` + 401 refresh logic
+- [x] Login, signup, invite acceptance pages
+- [x] Auth gate in `LayoutShell` + demo mode compatibility
+- [x] `WorkspaceSwitcher` + `UserMenu` in Sidebar
+- [x] `/settings` page: General, Members, Invites, API Keys tabs
 
 ### Week 13 — Multi-Tenant: Super Admin Dashboard + Polish
 - [ ] `/admin` page: PlatformStatsCards, AllWorkspacesTable, AllUsersTable, GlobalActivityFeed

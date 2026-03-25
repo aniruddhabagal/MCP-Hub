@@ -178,3 +178,92 @@ export interface WsMessage {
   rule_id?: string
   server_id?: string
 }
+
+// ── Auth & Multi-Tenant ───────────────────────────────────────────────────────
+
+export interface User {
+  id: string
+  email: string
+  display_name: string | null
+  is_superadmin: boolean
+  is_active: boolean
+  created_at: string
+}
+
+export interface Workspace {
+  id: string
+  name: string
+  slug: string
+  created_at: string
+}
+
+export type WorkspaceRole = 'owner' | 'admin' | 'member'
+
+export interface WorkspaceMember {
+  id: string
+  user_id: string
+  workspace_id: string
+  role: WorkspaceRole
+  user_email: string
+  user_display_name: string | null
+  joined_at: string
+}
+
+export interface WorkspaceInvite {
+  id: string
+  workspace_id: string
+  email: string
+  role: 'admin' | 'member'
+  token: string
+  invited_by: string
+  invited_by_email?: string
+  expires_at: string
+  accepted_at: string | null
+  created_at: string
+}
+
+export interface ApiKey {
+  id: string
+  workspace_id: string
+  name: string
+  key_prefix: string
+  created_by: string
+  last_used_at: string | null
+  expires_at: string | null
+  created_at: string
+}
+
+export interface TokenResponse {
+  access_token: string
+  refresh_token: string
+  token_type: string
+}
+
+export interface MeResponse {
+  id: string
+  email: string
+  display_name: string | null
+  is_superadmin: boolean
+  is_active: boolean
+  created_at: string
+  workspaces: Array<Workspace & { role: WorkspaceRole }>
+}
+
+export interface WorkspaceCreate {
+  name: string
+  slug?: string
+}
+
+export interface InviteCreate {
+  email: string
+  role: 'admin' | 'member'
+}
+
+export interface ApiKeyCreate {
+  name: string
+  expires_at?: string
+}
+
+export interface ApiKeyCreateResponse extends ApiKey {
+  raw_key: string
+}

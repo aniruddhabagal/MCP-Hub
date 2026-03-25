@@ -1,6 +1,7 @@
 import type {
   AlertEvent,
   AlertRule,
+  ApiKey,
   ErrorRateStat,
   HealthCheck,
   HealthSummary,
@@ -10,6 +11,10 @@ import type {
   Server,
   ToolCall,
   TopTool,
+  User,
+  Workspace,
+  WorkspaceInvite,
+  WorkspaceMember,
 } from './types'
 
 const NOW = Date.now()
@@ -327,4 +332,99 @@ export const DEMO_PROBE_RESULTS: ProbeResult[] = [
   { server_id: 'demo-srv-004', server_name: 'confluence-mcp', status: 'degraded',  latency_ms: 352,  error: null },
   { server_id: 'demo-srv-005', server_name: 'notion-mcp',     status: 'unhealthy', latency_ms: null, error: 'Connection timeout after 5000ms' },
   { server_id: 'demo-srv-006', server_name: 'linear-mcp',     status: 'down',      latency_ms: null, error: 'Connection refused: ECONNREFUSED' },
+]
+
+// ── Auth / Multi-Tenant Demo Data ─────────────────────────────────────────────
+
+export const DEMO_USER: User = {
+  id: 'demo-user-001',
+  email: 'demo@mcphub.dev',
+  display_name: 'Demo User',
+  is_superadmin: false,
+  is_active: true,
+  created_at: ago(720),
+}
+
+export const DEMO_WORKSPACE: Workspace = {
+  id: 'demo-ws-001',
+  name: 'Acme Corp',
+  slug: 'acme-corp',
+  created_at: ago(720),
+}
+
+export const DEMO_WORKSPACE_MEMBERS: WorkspaceMember[] = [
+  {
+    id: 'demo-member-001',
+    user_id: 'demo-user-001',
+    workspace_id: 'demo-ws-001',
+    role: 'owner',
+    user_email: 'demo@mcphub.dev',
+    user_display_name: 'Demo User',
+    joined_at: ago(720),
+  },
+  {
+    id: 'demo-member-002',
+    user_id: 'demo-user-002',
+    workspace_id: 'demo-ws-001',
+    role: 'admin',
+    user_email: 'alice@acme.dev',
+    user_display_name: 'Alice Chen',
+    joined_at: ago(600),
+  },
+  {
+    id: 'demo-member-003',
+    user_id: 'demo-user-003',
+    workspace_id: 'demo-ws-001',
+    role: 'member',
+    user_email: 'bob@acme.dev',
+    user_display_name: 'Bob Patel',
+    joined_at: ago(480),
+  },
+  {
+    id: 'demo-member-004',
+    user_id: 'demo-user-004',
+    workspace_id: 'demo-ws-001',
+    role: 'member',
+    user_email: 'carol@acme.dev',
+    user_display_name: 'Carol Kim',
+    joined_at: ago(240),
+  },
+]
+
+export const DEMO_WORKSPACE_INVITES: WorkspaceInvite[] = [
+  {
+    id: 'demo-invite-001',
+    workspace_id: 'demo-ws-001',
+    email: 'dave@acme.dev',
+    role: 'member',
+    token: 'demo-invite-token-001',
+    invited_by: 'demo-user-001',
+    invited_by_email: 'demo@mcphub.dev',
+    expires_at: new Date(Date.now() + 7 * 24 * 3_600_000).toISOString(),
+    accepted_at: null,
+    created_at: agoMin(120),
+  },
+]
+
+export const DEMO_API_KEYS: ApiKey[] = [
+  {
+    id: 'demo-key-001',
+    workspace_id: 'demo-ws-001',
+    name: 'CI/CD Pipeline',
+    key_prefix: 'mhk_ci_c',
+    created_by: 'demo-user-001',
+    last_used_at: agoMin(45),
+    expires_at: null,
+    created_at: ago(168),
+  },
+  {
+    id: 'demo-key-002',
+    workspace_id: 'demo-ws-001',
+    name: 'Staging Monitor',
+    key_prefix: 'mhk_st_9',
+    created_by: 'demo-user-002',
+    last_used_at: ago(24),
+    expires_at: new Date(Date.now() + 90 * 24 * 3_600_000).toISOString(),
+    created_at: ago(336),
+  },
 ]

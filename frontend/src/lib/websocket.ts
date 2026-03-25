@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { WsMessage } from './types'
 import { isDemoMode } from './demo-mode'
+import { getAccessToken } from './token-store'
 
 type ConnectionState = 'connecting' | 'connected' | 'disconnected'
 
@@ -24,7 +25,10 @@ export function useWebSocket() {
     if (!WS_URL || unmounted.current || isDemoMode()) return
     setConnectionState('connecting')
 
-    const ws = new WebSocket(WS_URL)
+    // Append JWT token as query param for server-side auth
+    const token = getAccessToken()
+    const url = token ? `${WS_URL}?token=${encodeURIComponent(token)}` : WS_URL
+    const ws = new WebSocket(url)
     wsRef.current = ws
 
     ws.onopen = () => {

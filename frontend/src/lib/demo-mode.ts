@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react'
 import {
   DEMO_ALERT_EVENTS,
   DEMO_ALERT_RULES,
+  DEMO_API_KEYS,
   DEMO_ERROR_RATES,
   DEMO_HEATMAP,
   DEMO_HEALTH_CHECKS,
@@ -14,6 +15,10 @@ import {
   DEMO_SERVERS,
   DEMO_TOOL_CALLS,
   DEMO_TOP_TOOLS,
+  DEMO_USER,
+  DEMO_WORKSPACE,
+  DEMO_WORKSPACE_INVITES,
+  DEMO_WORKSPACE_MEMBERS,
 } from './demo-data'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'
@@ -188,6 +193,33 @@ export function getDemoResponse(path: string, params?: Params, method = 'GET'): 
     if (params?.limit)     events = events.slice(0, Number(params.limit))
     return events
   }
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  if (path === '/auth/me') {
+    return {
+      ...DEMO_USER,
+      workspaces: [{ ...DEMO_WORKSPACE, role: 'owner' }],
+    }
+  }
+
+  // ── Workspace members ─────────────────────────────────────────────────────
+  const wsMembers = /^\/workspaces\/([^/]+)\/members$/.exec(path)
+  if (wsMembers) return DEMO_WORKSPACE_MEMBERS
+
+  // ── Workspace invites ─────────────────────────────────────────────────────
+  const wsInvites = /^\/workspaces\/([^/]+)\/invites$/.exec(path)
+  if (wsInvites) return DEMO_WORKSPACE_INVITES
+
+  // ── API keys ──────────────────────────────────────────────────────────────
+  const wsApiKeys = /^\/workspaces\/([^/]+)\/api-keys$/.exec(path)
+  if (wsApiKeys) return DEMO_API_KEYS
+
+  // ── Workspace detail ──────────────────────────────────────────────────────
+  const wsDetail = /^\/workspaces\/([^/]+)$/.exec(path)
+  if (wsDetail) return DEMO_WORKSPACE
+
+  // ── Workspaces list ───────────────────────────────────────────────────────
+  if (path === '/workspaces') return [DEMO_WORKSPACE]
 
   // Fallback
   return []

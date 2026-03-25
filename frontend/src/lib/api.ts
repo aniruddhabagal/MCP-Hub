@@ -3,24 +3,37 @@ import type {
   AlertRule,
   AlertRuleCreate,
   AlertRuleUpdate,
+  ApiKey,
+  ApiKeyCreate,
+  ApiKeyCreateResponse,
   ErrorRateStat,
   HealthCheck,
   HealthSummary,
   HeatmapPoint,
+  InviteCreate,
   LatencyStat,
+  MeResponse,
   PaginatedResponse,
   ProbeResult,
   Server,
   ServerCreate,
   ServerUpdate,
+  TokenResponse,
   ToolCall,
   ToolCallCreate,
   TopTool,
+  WorkspaceCreate,
+  WorkspaceInvite,
+  WorkspaceMember,
 } from './types'
 import { getDemoResponse, isDemoMode, setDemoMode } from './demo-mode'
+import { callRefreshFn, getAccessToken, setAccessToken } from './token-store'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'
 const CRON_SECRET = process.env.NEXT_PUBLIC_CRON_SECRET ?? ''
+
+// Prevent concurrent refresh attempts
+let _refreshing: Promise<string | null> | null = null
 
 async function apiFetch<T>(
   path: string,
@@ -42,11 +55,41 @@ async function apiFetch<T>(
     const str = qs.toString()
     if (str) url += `?${str}`
   }
+
+  const buildHeaders = (token?: string | null): Record<string, string> => {
+    const h: Record<string, string> = { 'Content-Type': 'application/json', ...(rest.headers as Record<string, string> ?? {}) }
+    const t = token ?? getAccessToken()
+    if (t) h['Authorization'] = `Bearer ${t}`
+    return h
+  }
+
   try {
-    const res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json', ...(rest.headers ?? {}) },
-      ...rest,
-    })
+    const res = await fetch(url, { headers: buildHeaders(), ...rest })
+
+    // 401 — attempt token refresh and retry once
+    if (res.status === 401) {
+      if (!_refreshing) {
+        _refreshing = callRefreshFn().finally(() => { _refreshing = null })
+      }
+      const newToken = await _refreshing
+      if (newToken) {
+        const retryRes = await fetch(url, { headers: buildHeaders(newToken), ...rest })
+        if (!retryRes.ok) {
+          const text = await retryRes.text().catch(() => '')
+          throw new Error(`${retryRes.status} ${retryRes.statusText}: ${text}`)
+        }
+        if (retryRes.status === 204) return undefined as T
+        return retryRes.json()
+      } else {
+        // Refresh failed — clear token and redirect to login
+        setAccessToken(null)
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
+        throw new Error('Session expired')
+      }
+    }
+
     if (!res.ok) {
       const text = await res.text().catch(() => '')
       throw new Error(`${res.status} ${res.statusText}: ${text}`)
@@ -62,6 +105,90 @@ async function apiFetch<T>(
     throw err
   }
 }
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export const apiLogin = (email: string, password: string) =>
+  apiFetch<TokenResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+
+export const apiSignup = (email: string, display_name: string, password: string) =>
+  apiFetch<TokenResponse>('/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify({ email, display_name, password }),
+  })
+
+export const apiRefresh = (refresh_token: string) =>
+  apiFetch<TokenResponse>('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refresh_token }),
+  })
+
+export const apiGetMe = () => apiFetch<MeResponse>('/auth/me')
+
+export const apiSwitchWorkspace = (workspace_id: string) =>
+  apiFetch<TokenResponse>('/auth/switch-workspace', {
+    method: 'POST',
+    body: JSON.stringify({ workspace_id }),
+  })
+
+export const apiAcceptInvite = (token: string) =>
+  apiFetch<{ message: string }>(`/auth/accept-invite/${token}`, { method: 'POST' })
+
+// ── Workspaces ────────────────────────────────────────────────────────────────
+
+export const createWorkspace = (body: WorkspaceCreate) =>
+  apiFetch<{ id: string; name: string; slug: string; created_at: string }>('/workspaces', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+
+export const getWorkspaceMembers = (workspaceId: string) =>
+  apiFetch<WorkspaceMember[]>(`/workspaces/${workspaceId}/members`)
+
+export const inviteMember = (workspaceId: string, body: InviteCreate) =>
+  apiFetch<WorkspaceInvite>(`/workspaces/${workspaceId}/members/invite`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+
+export const updateMemberRole = (workspaceId: string, userId: string, role: string) =>
+  apiFetch<WorkspaceMember>(`/workspaces/${workspaceId}/members/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role }),
+  })
+
+export const removeMember = (workspaceId: string, userId: string) =>
+  apiFetch<void>(`/workspaces/${workspaceId}/members/${userId}`, { method: 'DELETE' })
+
+export const getWorkspaceInvites = (workspaceId: string) =>
+  apiFetch<WorkspaceInvite[]>(`/workspaces/${workspaceId}/invites`)
+
+export const revokeInvite = (workspaceId: string, inviteId: string) =>
+  apiFetch<void>(`/workspaces/${workspaceId}/invites/${inviteId}`, { method: 'DELETE' })
+
+export const getApiKeys = (workspaceId: string) =>
+  apiFetch<ApiKey[]>(`/workspaces/${workspaceId}/api-keys`)
+
+export const createApiKey = (workspaceId: string, body: ApiKeyCreate) =>
+  apiFetch<ApiKeyCreateResponse>(`/workspaces/${workspaceId}/api-keys`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+
+export const revokeApiKey = (workspaceId: string, keyId: string) =>
+  apiFetch<void>(`/workspaces/${workspaceId}/api-keys/${keyId}`, { method: 'DELETE' })
+
+export const updateWorkspace = (workspaceId: string, body: { name?: string; slug?: string }) =>
+  apiFetch<{ id: string; name: string; slug: string }>(`/workspaces/${workspaceId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+
+export const deleteWorkspace = (workspaceId: string) =>
+  apiFetch<void>(`/workspaces/${workspaceId}`, { method: 'DELETE' })
 
 // ── Servers ──────────────────────────────────────────────────────────────────
 

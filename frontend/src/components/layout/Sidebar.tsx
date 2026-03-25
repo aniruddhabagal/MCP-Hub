@@ -8,6 +8,8 @@ import {
   BarChart3,
   LayoutDashboard,
   Server,
+  Settings,
+  Shield,
   X,
   Zap,
 } from 'lucide-react'
@@ -15,9 +17,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useWebSocket } from '@/lib/websocket'
 import { useDemoMode, toggleDemoMode } from '@/lib/demo-mode'
+import { useAuth } from '@/lib/auth'
 import { Switch } from '@/components/ui/switch'
+import { WorkspaceSwitcher } from './WorkspaceSwitcher'
+import { UserMenu } from './UserMenu'
 
-const navItems = [
+const coreNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/servers', label: 'Servers', icon: Server },
   { href: '/tools', label: 'Tool Calls', icon: Zap },
@@ -35,6 +40,20 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const { connectionState } = useWebSocket()
   const demo = useDemoMode()
   const queryClient = useQueryClient()
+  const { role, isSuperAdmin, isAuthenticated } = useAuth()
+
+  // Build nav items based on role
+  const navItems = [
+    ...coreNavItems,
+    // Settings: visible to admin/owner (and demo mode shows it since role = 'owner')
+    ...(isAuthenticated && (role === 'admin' || role === 'owner')
+      ? [{ href: '/settings', label: 'Settings', icon: Settings }]
+      : []),
+    // Admin: super admin only
+    ...(isSuperAdmin
+      ? [{ href: '/admin', label: 'Admin', icon: Shield }]
+      : []),
+  ]
 
   return (
     <aside
@@ -45,11 +64,10 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
-      {/* Wordmark */}
-      <div className="px-5 pt-6 pb-5 border-b border-border">
-        <div className="flex items-center justify-between">
+      {/* Wordmark + Workspace Switcher */}
+      <div className="px-3 pt-5 pb-3 border-b border-border">
+        <div className="flex items-center justify-between px-2 mb-3">
           <div className="flex items-center gap-2.5">
-            {/* Icon mark */}
             <div className="w-7 h-7 rounded border border-primary/40 bg-primary/10 flex items-center justify-center flex-shrink-0">
               <Activity className="w-3.5 h-3.5 text-primary" />
             </div>
@@ -66,9 +84,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             <X className="w-4 h-4" />
           </button>
         </div>
-        <p className="text-[9px] font-mono text-muted-foreground mt-1.5 ml-9 uppercase tracking-[0.2em]">
+        <p className="text-[9px] font-mono text-muted-foreground/50 mb-3 px-2 uppercase tracking-[0.2em]">
           Monitor v0.1
         </p>
+        {/* Workspace switcher */}
+        <WorkspaceSwitcher />
       </div>
 
       {/* Nav */}
@@ -105,9 +125,10 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         })}
       </nav>
 
-      {/* Footer status */}
-      <div className="px-5 py-4 border-t border-border">
-        <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
+      {/* Footer */}
+      <div className="px-3 py-3 border-t border-border space-y-3">
+        {/* WS status */}
+        <div className="px-2 flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
           <span
             className={cn(
               'w-1.5 h-1.5 rounded-full',
@@ -125,11 +146,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 ? 'Connecting…'
                 : 'Offline'}
           </span>
+          <span className="ml-auto text-muted-foreground/40">ws</span>
         </div>
-        <p className="text-[9px] font-mono text-muted-foreground/40 mt-1">
-          ws/dashboard
-        </p>
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+
+        {/* Demo mode toggle */}
+        <div className="flex items-center justify-between px-2 py-1 rounded border border-border/50 bg-secondary/30">
           <span className="text-[10px] font-mono text-muted-foreground">Demo mode</span>
           <Switch
             checked={demo}
@@ -140,6 +161,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             className="scale-75 origin-right"
           />
         </div>
+
+        {/* User menu */}
+        <UserMenu />
       </div>
     </aside>
   )
