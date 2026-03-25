@@ -1,6 +1,5 @@
 'use client'
 
-import { use } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
@@ -32,9 +31,9 @@ import { formatLatency, formatRelativeTime, formatDateTime } from '@/lib/utils'
 export default function ServerDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: { id: string }
 }) {
-  const { id } = use(params)
+  const { id } = params
   const { data: server, isLoading, isError } = useServer(id)
   const { data: healthSummary } = useHealthSummary()
   const { data: toolCalls } = useToolCalls({ server_id: id, size: 20 })
