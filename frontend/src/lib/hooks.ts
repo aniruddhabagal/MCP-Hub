@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from './api'
-import type { AlertRuleUpdate, ServerCreate, ToolCallCreate } from './types'
+import type { AlertRuleUpdate, ServerCreate, ServerUpdate, ToolCallCreate } from './types'
 
 // ── Query keys ────────────────────────────────────────────────────────────────
 
@@ -38,6 +38,18 @@ export function useCreateServer() {
   return useMutation({
     mutationFn: (body: ServerCreate) => api.createServer(body),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.servers }),
+  })
+}
+
+export function useUpdateServer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: ServerUpdate }) =>
+      api.updateServer(id, body),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: QK.servers })
+      qc.invalidateQueries({ queryKey: QK.server(id) })
+    },
   })
 }
 

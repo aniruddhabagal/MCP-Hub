@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Activity, ExternalLink, Lock, Trash2 } from 'lucide-react'
+import { Activity, ExternalLink, Lock, Pencil, Trash2 } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useDeleteServer, useProbeServer, useServers } from '@/lib/hooks'
 import { formatLatency, formatRelativeTime } from '@/lib/utils'
 import { useHealthSummary } from '@/lib/hooks'
+import { RegisterServerModal } from './RegisterServerModal'
 import type { Server } from '@/lib/types'
 
 function ServerRowActions({ server }: { server: Server }) {
@@ -45,6 +46,19 @@ function ServerRowActions({ server }: { server: Server }) {
       >
         <ExternalLink className="w-3.5 h-3.5" />
       </a>
+      <RegisterServerModal
+        server={server}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            title="Edit server"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+        }
+      />
       {confirming ? (
         <>
           <Button

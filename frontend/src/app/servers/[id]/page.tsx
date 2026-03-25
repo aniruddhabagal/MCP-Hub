@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Activity,
   ExternalLink,
+  Pencil,
   Tag,
   User,
   GitBranch,
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/table'
 import { HealthTimeline } from '@/components/servers/HealthTimeline'
 import { UptimeCalendar } from '@/components/servers/UptimeCalendar'
+import { RegisterServerModal } from '@/components/servers/RegisterServerModal'
 import { useServer, useHealthSummary, useToolCalls, useAlertEvents, useProbeServer } from '@/lib/hooks'
 import { formatLatency, formatRelativeTime, formatDateTime } from '@/lib/utils'
 
@@ -79,16 +81,27 @@ export default function ServerDetailPage({
               <p className="text-sm text-muted-foreground font-mono">{server.description}</p>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 flex-shrink-0"
-            onClick={() => probe.mutate(id)}
-            disabled={probe.isPending}
-          >
-            <Activity className={`w-3.5 h-3.5 ${probe.isPending ? 'animate-spin' : ''}`} />
-            {probe.isPending ? 'Probing…' : 'Probe Now'}
-          </Button>
+          <div className="flex gap-2 flex-shrink-0">
+            <RegisterServerModal
+              server={server}
+              trigger={
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Pencil className="w-3.5 h-3.5" />
+                  Edit
+                </Button>
+              }
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => probe.mutate(id)}
+              disabled={probe.isPending}
+            >
+              <Activity className={`w-3.5 h-3.5 ${probe.isPending ? 'animate-spin' : ''}`} />
+              {probe.isPending ? 'Probing…' : 'Probe Now'}
+            </Button>
+          </div>
         </div>
       </div>
 

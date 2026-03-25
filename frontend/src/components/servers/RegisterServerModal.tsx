@@ -14,8 +14,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useCreateServer } from '@/lib/hooks'
-import type { ServerCreate, AuthType, AuthCredentials } from '@/lib/types'
+import { useCreateServer, useUpdateServer } from '@/lib/hooks'
+import type { Server, ServerCreate, AuthType, AuthCredentials } from '@/lib/types'
 
 interface FormState {
   name: string
@@ -23,6 +23,7 @@ interface FormState {
   description: string
   owner: string
   version: string
+  tags: string
   auth_type: AuthType
   auth_credentials: AuthCredentials
 }
@@ -33,8 +34,14 @@ const INITIAL: FormState = {
   description: '',
   owner: '',
   version: '',
+  tags: '',
   auth_type: 'none',
   auth_credentials: {},
+}
+
+interface RegisterServerModalProps {
+  server?: Server
+  trigger?: React.ReactNode
 }
 
 const AUTH_LABELS: Record<AuthType, string> = {
@@ -44,11 +51,28 @@ const AUTH_LABELS: Record<AuthType, string> = {
   basic: 'Basic Auth',
 }
 
-export function RegisterServerModal() {
+export function RegisterServerModal({ server, trigger }: RegisterServerModalProps) {
+  const isEditMode = !!server
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState<FormState>(INITIAL)
+
+  const getInitialForm = (): FormState => {
+    if (!server) return INITIAL
+    return {
+      name: server.name,
+      endpoint: server.endpoint,
+      description: server.description || '',
+      owner: server.owner || '',
+      version: server.version || '',
+      tags: (server.tags || []).join(', '),
+      auth_type: (server.auth_type || 'none') as AuthType,
+      auth_credentials: {},
+    }
+  }
+
+  const [form, setForm] = useState<FormState>(getInitialForm())
   const [error, setError] = useState<string | null>(null)
   const createServer = useCreateServer()
+  const updateServer = useUpdateServer()
 
   function set<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -74,25 +98,34 @@ export function RegisterServerModal() {
       return
     }
 
-    const payload: ServerCreate = {
+    const tags = form.tags
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t)
+
+    const payload = {
       name: form.name.trim(),
       endpoint: form.endpoint.trim(),
-    }
-    if (form.description?.trim()) payload.description = form.description.trim()
-    if (form.owner?.trim()) payload.owner = form.owner.trim()
-    if (form.version?.trim()) payload.version = form.version.trim()
-
-    if (form.auth_type && form.auth_type !== 'none') {
-      payload.auth_type = form.auth_type
-      payload.auth_credentials = form.auth_credentials
+      ...(form.description?.trim() && { description: form.description.trim() }),
+      ...(form.owner?.trim() && { owner: form.owner.trim() }),
+      ...(form.version?.trim() && { version: form.version.trim() }),
+      ...(tags.length > 0 && { tags }),
+      ...(form.auth_type && form.auth_type !== 'none' && {
+        auth_type: form.auth_type,
+        auth_credentials: form.auth_credentials,
+      }),
     }
 
     try {
-      await createServer.mutateAsync(payload)
+      if (isEditMode && server) {
+        await updateServer.mutateAsync({ id: server.id, body: payload })
+      } else {
+        await createServer.mutateAsync(payload as ServerCreate)
+      }
       setOpen(false)
       setForm(INITIAL)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to register server.')
+      setError(err instanceof Error ? err.message : `Failed to ${isEditMode ? 'update' : 'register'} server.`)
     }
   }
 
@@ -102,24 +135,29 @@ export function RegisterServerModal() {
       onOpenChange={(v) => {
         setOpen(v)
         if (!v) {
-          setForm(INITIAL)
+          setForm(getInitialForm())
           setError(null)
         }
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <Plus className="w-4 h-4" />
-          Register Server
-        </Button>
+        {trigger ? (
+          trigger
+        ) : (
+          <Button size="sm" className="gap-1.5">
+            <Plus className="w-4 h-4" />
+            Register Server
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Register MCP Server</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Server' : 'Register MCP Server'}</DialogTitle>
           <DialogDescription>
-            Add a new server to the registry. MCPHub will monitor its health and
-            proxy tool calls through it.
+            {isEditMode
+              ? 'Update server configuration, metadata, and authentication.'
+              : 'Add a new server to the registry. MCPHub will monitor its health and proxy tool calls through it.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -174,6 +212,16 @@ export function RegisterServerModal() {
                 onChange={(e) => set('version', e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="tags">Tags</Label>
+            <Input
+              id="tags"
+              placeholder="filesystem, tools, backup (comma-separated)"
+              value={form.tags}
+              onChange={(e) => set('tags', e.target.value)}
+            />
           </div>
 
           {/* Auth configuration */}
@@ -278,8 +326,15 @@ export function RegisterServerModal() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createServer.isPending}>
-              {createServer.isPending ? 'Registering…' : 'Register'}
+            <Button
+              type="submit"
+              disabled={createServer.isPending || updateServer.isPending}
+            >
+              {createServer.isPending || updateServer.isPending
+                ? `${isEditMode ? 'Updating' : 'Registering'}…`
+                : isEditMode
+                  ? 'Update'
+                  : 'Register'}
             </Button>
           </DialogFooter>
         </form>
