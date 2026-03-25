@@ -1,4 +1,11 @@
 import type {
+  AdminAlertEvent,
+  AdminGlobalAnalytics,
+  AdminOverview,
+  AdminToolCall,
+  AdminUserDetail,
+  AdminUserSummary,
+  AdminWorkspaceSummary,
   AlertEvent,
   AlertRule,
   AlertRuleCreate,
@@ -10,6 +17,7 @@ import type {
   HealthCheck,
   HealthSummary,
   HeatmapPoint,
+  ImpersonateResponse,
   InviteCreate,
   LatencyStat,
   MeResponse,
@@ -302,3 +310,53 @@ export const evaluateAlerts = () =>
     method: 'POST',
     headers: { Authorization: `Bearer ${CRON_SECRET}` },
   })
+
+// ── Super Admin ───────────────────────────────────────────────────────────────
+
+export const getAdminOverview = () =>
+  apiFetch<AdminOverview>('/admin/overview')
+
+export const getAdminWorkspaces = () =>
+  apiFetch<AdminWorkspaceSummary[]>('/admin/workspaces')
+
+export const getAdminWorkspace = (id: string) =>
+  apiFetch<AdminWorkspaceSummary>(`/admin/workspaces/${id}`)
+
+export const updateAdminWorkspace = (id: string, body: { name?: string; slug?: string }) =>
+  apiFetch<AdminWorkspaceSummary>(`/admin/workspaces/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+
+export const deleteAdminWorkspace = (id: string) =>
+  apiFetch<void>(`/admin/workspaces/${id}`, { method: 'DELETE' })
+
+export const getAdminUsers = () =>
+  apiFetch<AdminUserSummary[]>('/admin/users')
+
+export const getAdminUser = (id: string) =>
+  apiFetch<AdminUserDetail>(`/admin/users/${id}`)
+
+export const updateAdminUser = (
+  id: string,
+  body: { is_active?: boolean; is_superadmin?: boolean; display_name?: string }
+) =>
+  apiFetch<AdminUserDetail>(`/admin/users/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+
+export const deleteAdminUser = (id: string) =>
+  apiFetch<void>(`/admin/users/${id}`, { method: 'DELETE' })
+
+export const impersonateUser = (userId: string) =>
+  apiFetch<ImpersonateResponse>(`/admin/impersonate/${userId}`, { method: 'POST' })
+
+export const getAdminToolCalls = () =>
+  apiFetch<AdminToolCall[]>('/admin/tool-calls')
+
+export const getAdminAlertEvents = () =>
+  apiFetch<AdminAlertEvent[]>('/admin/alerts/events')
+
+export const getGlobalAnalytics = () =>
+  apiFetch<AdminGlobalAnalytics>('/admin/analytics/global')

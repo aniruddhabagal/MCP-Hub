@@ -396,12 +396,12 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] `/settings` page: General, Members, Invites, API Keys tabs
 
 ### Week 13 — Multi-Tenant: Super Admin Dashboard + Polish
-- [ ] `/admin` page: PlatformStatsCards, AllWorkspacesTable, AllUsersTable, GlobalActivityFeed
-- [ ] `/admin/workspaces/[id]`: workspace deep dive with impersonate/delete
-- [ ] `/admin/users/[id]`: user deep dive with toggle active/superadmin, impersonate/delete
-- [ ] Admin nav item (shield icon) conditional on `is_superadmin`
-- [ ] E2E tests for auth flow, tenant isolation, super admin
-- [ ] Update demo data with mock user/workspace objects
+- [x] `/admin` page: PlatformStatsCards, AllWorkspacesTable, AllUsersTable, GlobalActivityFeed
+- [x] `/admin/workspaces/[id]`: workspace deep dive with impersonate/delete
+- [x] `/admin/users/[id]`: user deep dive with toggle active/superadmin, impersonate/delete
+- [x] Admin nav item (shield icon) conditional on `is_superadmin`
+- [x] E2E tests for auth flow, tenant isolation, super admin
+- [x] Update demo data with mock user/workspace objects
 
 ---
 

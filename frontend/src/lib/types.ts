@@ -239,14 +239,18 @@ export interface TokenResponse {
   token_type: string
 }
 
-export interface MeResponse {
+// Workspace summary as returned by /auth/me (no created_at)
+export interface WorkspaceSummary {
   id: string
-  email: string
-  display_name: string | null
-  is_superadmin: boolean
-  is_active: boolean
-  created_at: string
-  workspaces: Array<Workspace & { role: WorkspaceRole }>
+  name: string
+  slug: string
+  role: WorkspaceRole
+}
+
+export interface MeResponse {
+  user: User
+  workspaces: WorkspaceSummary[]
+  current_workspace: WorkspaceSummary
 }
 
 export interface WorkspaceCreate {
@@ -266,4 +270,79 @@ export interface ApiKeyCreate {
 
 export interface ApiKeyCreateResponse extends ApiKey {
   raw_key: string
+}
+
+// ── Super Admin ───────────────────────────────────────────────────────────────
+
+export interface AdminOverview {
+  total_users: number
+  total_workspaces: number
+  total_servers: number
+  total_tool_calls: number
+  active_alerts: number
+}
+
+export interface AdminWorkspaceSummary {
+  id: string
+  name: string
+  slug: string
+  member_count: number
+  server_count: number
+  created_at: string
+}
+
+export interface AdminUserSummary {
+  id: string
+  email: string
+  display_name: string | null
+  is_superadmin: boolean
+  is_active: boolean
+  workspace_count: number
+  created_at: string
+}
+
+export interface AdminUserDetail {
+  id: string
+  email: string
+  display_name: string | null
+  is_superadmin: boolean
+  is_active: boolean
+  created_at: string
+  workspaces: Array<{ id: string; name: string; slug: string; role: WorkspaceRole }>
+}
+
+export interface AdminGlobalAnalytics {
+  total_calls: number
+  total_errors: number
+  error_rate: number
+  avg_latency_ms: number | null
+  top_tools: Array<{ tool_name: string; call_count: number }>
+}
+
+export interface AdminToolCall {
+  id: string
+  tool_name: string
+  status: 'success' | 'error'
+  duration_ms: number | null
+  workspace_id: string
+  server_id: string
+  called_at: string
+}
+
+export interface AdminAlertEvent {
+  id: string
+  state: 'fired' | 'resolved'
+  message: string | null
+  value: number | null
+  workspace_id: string
+  rule_id: string
+  fired_at: string
+  resolved_at: string | null
+}
+
+export interface ImpersonateResponse {
+  access_token: string
+  token_type: string
+  impersonated_user_id: string
+  workspace_id: string
 }

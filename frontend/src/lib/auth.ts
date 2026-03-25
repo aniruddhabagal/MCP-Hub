@@ -20,7 +20,7 @@ export const DEMO_USER: User = {
   id: 'demo-user-001',
   email: 'demo@mcphub.dev',
   display_name: 'Demo User',
-  is_superadmin: false,
+  is_superadmin: true,  // superadmin in demo so all pages are explorable
   is_active: true,
   created_at: new Date(Date.now() - 30 * 24 * 3_600_000).toISOString(),
 }
@@ -109,24 +109,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await fetchRaw<MeResponse>('/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       })
-      const payload = decodeJwtPayload(token)
-      const wid = payload.wid as string | undefined
-      const currentWs = data.workspaces.find((w) => w.id === wid) ?? data.workspaces[0]
-      setUser({
-        id: data.id,
-        email: data.email,
-        display_name: data.display_name,
-        is_superadmin: data.is_superadmin,
-        is_active: data.is_active,
-        created_at: data.created_at,
-      })
-      if (currentWs) {
-        setWorkspace({ id: currentWs.id, name: currentWs.name, slug: currentWs.slug, created_at: currentWs.created_at })
-        setRole(currentWs.role)
-      }
-      setWorkspaces(
-        data.workspaces.map((w) => ({ id: w.id, name: w.name, slug: w.slug, created_at: w.created_at }))
-      )
+      // Backend returns { user: {...}, workspaces: [...], current_workspace: {...} }
+      setUser(data.user)
+      const cw = data.current_workspace
+      setWorkspace({ id: cw.id, name: cw.name, slug: cw.slug, created_at: '' })
+      setRole(cw.role)
+      setWorkspaces(data.workspaces.map((w) => ({ id: w.id, name: w.name, slug: w.slug, created_at: '' })))
     } catch {
       // session invalid — clear
       setAccessToken(null)
