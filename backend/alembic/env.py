@@ -12,11 +12,7 @@ from app.database import Base
 import app.models  # noqa: F401
 
 config = context.config
-# Use the direct (non-pooler) connection for DDL migrations when available;
-# Neon's PgBouncer pooler does not reliably support DDL statements.
-config.set_main_option(
-    "sqlalchemy.url", settings.database_url_direct or settings.database_url
-)
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
