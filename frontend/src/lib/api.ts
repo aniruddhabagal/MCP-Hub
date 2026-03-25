@@ -65,14 +65,18 @@ async function apiFetch<T>(
   }
 
   const buildHeaders = (token?: string | null): Record<string, string> => {
-    const h: Record<string, string> = { 'Content-Type': 'application/json', ...(rest.headers as Record<string, string> ?? {}) }
+    const h: Record<string, string> = { ...(rest.headers as Record<string, string> ?? {}) }
+    const isFormData = typeof FormData !== 'undefined' && rest.body instanceof FormData
+    if (!isFormData && !Object.keys(h).some((k) => k.toLowerCase() === 'content-type')) {
+      h['Content-Type'] = 'application/json'
+    }
     const t = token ?? getAccessToken()
     if (t) h['Authorization'] = `Bearer ${t}`
     return h
   }
 
   try {
-    const res = await fetch(url, { headers: buildHeaders(), ...rest })
+    const res = await fetch(url, { ...rest, headers: buildHeaders() })
 
     // 401 — attempt token refresh and retry once
     if (res.status === 401) {
@@ -81,7 +85,7 @@ async function apiFetch<T>(
       }
       const newToken = await _refreshing
       if (newToken) {
-        const retryRes = await fetch(url, { headers: buildHeaders(newToken), ...rest })
+        const retryRes = await fetch(url, { ...rest, headers: buildHeaders(newToken) })
         if (!retryRes.ok) {
           const text = await retryRes.text().catch(() => '')
           throw new Error(`${retryRes.status} ${retryRes.statusText}: ${text}`)
