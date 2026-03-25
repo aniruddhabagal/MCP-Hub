@@ -433,6 +433,19 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] `PendingInviteModal.tsx` — fix session key to re-show modal for new invite sets
 - [x] `WorkspaceGeneralSettings.tsx` — hide edit/delete for personal workspaces
 
+### Week 16 — Per-Server Auth Configuration
+- [x] Alembic migration `0005_server_auth_credentials.py` — add `auth_type` (String) and `auth_credentials` (JSONB) columns to `mcp_servers`
+- [x] `models/server.py` — add `auth_type` and `auth_credentials` fields to `MCPServer` ORM model
+- [x] `schemas/server.py` — `ServerCreate`/`ServerUpdate` accept `auth_type` + `auth_credentials`; `ServerResponse` masks raw credentials (exposes `has_credentials: bool` flag only); `model_validator` enforces credentials required when auth_type is set
+- [x] `utils/mcp_client.py` — `build_auth_headers()` helper supporting bearer token, API key header, and HTTP basic auth; `probe_server()` accepts optional `auth_headers` param; fix probe `Accept` header and broaden healthy status check to all 2xx
+- [x] `agents/health_prober.py` — pass server auth headers to `probe_server()`
+- [x] `routers/proxy.py` — pass server auth headers when forwarding requests to upstream MCP server
+- [x] `lib/types.ts` — add `auth_type` and `has_credentials` to `Server` interface
+- [x] `RegisterServerModal.tsx` — auth config section with auth type selector and conditional credential inputs (token field for bearer, header name + value for API key, username + password for basic)
+- [x] `ServerTable.tsx` — lock icon indicator for servers with auth configured
+- [x] `servers/[id]/page.tsx` — auth type shown in server metadata row
+- [x] `lib/demo-data.ts` — update mock servers with auth fields
+
 ---
 
 ## Why This Is a Real Gap Right Now

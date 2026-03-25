@@ -13,6 +13,7 @@ MCP went from zero to ubiquitous in under a year. Teams now run 10–20 MCP serv
 | 📋 | **Server Registry** | Catalog all MCP servers with metadata, version, owner, and tags |
 | 💓 | **Health Monitoring** | On-demand probes with latency tracking, error rates, and uptime history |
 | 🔀 | **Transparent Proxy** | Sits in front of any MCP server and logs every tool call — zero code changes required |
+| 🔐 | **Per-Server Auth** | Configure bearer token, API key header, or HTTP basic auth per server — credentials stored server-side, never exposed to clients |
 | 📊 | **Usage Analytics** | Top tools by call count, latency histograms, error rates, volume heatmap |
 | 🚨 | **Alert System** | Threshold-based rules on error rate, latency, or availability with Slack/webhook delivery |
 | ⚡ | **Real-Time Dashboard** | WebSocket push for live server status and alert toasts |
@@ -199,11 +200,11 @@ All REST endpoints are under `/api/v1`. Protected endpoints require `Authorizati
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/servers` | List workspace servers |
-| `POST` | `/servers` | Register a new server |
-| `GET` | `/servers/{id}` | Get server details |
-| `PATCH` | `/servers/{id}` | Update server metadata |
+| `POST` | `/servers` | Register a new server (optional: `auth_type`, `auth_credentials`) |
+| `GET` | `/servers/{id}` | Get server details (`has_credentials` flag — raw credentials never returned) |
+| `PATCH` | `/servers/{id}` | Update server metadata or auth configuration |
 | `DELETE` | `/servers/{id}` | Remove a server |
-| `POST` | `/servers/{id}/probe` | Probe a single server on-demand |
+| `POST` | `/servers/{id}/probe` | Probe a single server on-demand (uses configured auth) |
 
 ### Health
 | Method | Endpoint | Description |
@@ -342,7 +343,7 @@ MCP-Hub/
 | `workspace_members` | User ↔ workspace join — role (owner/admin/member) |
 | `workspace_invites` | Pending email invitations with expiring token |
 | `api_keys` | Hashed API keys for programmatic access |
-| `mcp_servers` | Server registry — endpoint, owner, tags, status *(workspace-scoped)* |
+| `mcp_servers` | Server registry — endpoint, owner, tags, status, auth type + credentials (JSONB) *(workspace-scoped)* |
 | `health_checks` | Time-series probe results — latency, status, error *(workspace-scoped)* |
 | `tool_calls` | Full audit log of every proxied tool invocation *(workspace-scoped)* |
 | `alert_rules` | Configurable threshold conditions per server or global *(workspace-scoped)* |
@@ -391,6 +392,7 @@ For full steps see **[Deployment.md](./Deployment.md)**.
 - [x] Multi-tenant team workspaces (owner / admin / member roles)
 - [x] Custom JWT auth with refresh token flow
 - [x] Super admin platform dashboard with impersonation
+- [x] Per-server auth configuration (bearer token, API key header, HTTP basic)
 - [ ] MCP server auto-discovery (scan local network / Docker)
 - [ ] Token cost estimation per tool call
 - [ ] GitHub Actions integration for CI health checks
