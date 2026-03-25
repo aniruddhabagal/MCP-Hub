@@ -7,7 +7,6 @@ import {
   Building2,
   Loader2,
   Shield,
-  Trash2,
   UserCheck,
   UserX,
 } from 'lucide-react'
