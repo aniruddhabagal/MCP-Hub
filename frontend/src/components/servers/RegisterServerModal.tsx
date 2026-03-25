@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, ChevronDown } from 'lucide-react'
+import { Plus, ChevronDown, Pencil, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -53,7 +53,10 @@ const AUTH_LABELS: Record<AuthType, string> = {
 
 export function RegisterServerModal({ server, trigger }: RegisterServerModalProps) {
   const isEditMode = !!server
+  const serverHasAuth = isEditMode && !!server.auth_type && server.auth_type !== 'none'
   const [open, setOpen] = useState(false)
+  // In edit mode with existing auth, collapse credential inputs by default
+  const [authExpanded, setAuthExpanded] = useState(!serverHasAuth)
 
   const getInitialForm = (): FormState => {
     if (!server) return INITIAL
@@ -103,6 +106,11 @@ export function RegisterServerModal({ server, trigger }: RegisterServerModalProp
       .map((t) => t.trim())
       .filter((t) => t)
 
+    // Only send auth_credentials if the user actually filled in credential fields
+    const hasNewCredentials =
+      form.auth_type !== 'none' &&
+      Object.values(form.auth_credentials).some((v) => v && String(v).trim())
+
     const payload = {
       name: form.name.trim(),
       endpoint: form.endpoint.trim(),
@@ -110,10 +118,8 @@ export function RegisterServerModal({ server, trigger }: RegisterServerModalProp
       ...(form.owner?.trim() && { owner: form.owner.trim() }),
       ...(form.version?.trim() && { version: form.version.trim() }),
       ...(tags.length > 0 && { tags }),
-      ...(form.auth_type && form.auth_type !== 'none' && {
-        auth_type: form.auth_type,
-        auth_credentials: form.auth_credentials,
-      }),
+      auth_type: form.auth_type,
+      ...(hasNewCredentials && { auth_credentials: form.auth_credentials }),
     }
 
     try {
@@ -137,6 +143,7 @@ export function RegisterServerModal({ server, trigger }: RegisterServerModalProp
         if (!v) {
           setForm(getInitialForm())
           setError(null)
+          setAuthExpanded(!serverHasAuth)
         }
       }}
     >
@@ -225,90 +232,115 @@ export function RegisterServerModal({ server, trigger }: RegisterServerModalProp
           </div>
 
           {/* Auth configuration */}
-          <div className="space-y-3 rounded-lg border border-border p-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="auth_type" className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="rounded-lg border border-border p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 Authentication
-              </Label>
-              <div className="relative">
-                <select
-                  id="auth_type"
-                  value={form.auth_type}
-                  onChange={(e) => {
-                    set('auth_type', e.target.value as AuthType)
-                    set('auth_credentials', {})
-                  }}
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm appearance-none pr-8 focus:outline-none focus:ring-1 focus:ring-ring"
+              </span>
+              {/* In edit mode with existing auth, show a collapsed summary until the user clicks edit */}
+              {isEditMode && serverHasAuth && !authExpanded && (
+                <button
+                  type="button"
+                  onClick={() => setAuthExpanded(true)}
+                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {(Object.entries(AUTH_LABELS) as [AuthType, string][]).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 pointer-events-none text-muted-foreground" />
-              </div>
+                  <Lock className="w-3 h-3" />
+                  <span className="font-mono">{AUTH_LABELS[form.auth_type]}</span>
+                  <Pencil className="w-3 h-3" />
+                </button>
+              )}
             </div>
 
-            {form.auth_type === 'bearer' && (
-              <div className="space-y-1.5">
-                <Label htmlFor="bearer_token">Bearer Token</Label>
-                <Input
-                  id="bearer_token"
-                  type="password"
-                  placeholder="sk-..."
-                  value={form.auth_credentials.token ?? ''}
-                  onChange={(e) => setCred('token', e.target.value)}
-                />
-              </div>
-            )}
-
-            {form.auth_type === 'api_key_header' && (
+            {/* Show full credential inputs when expanded (always for create, on demand for edit) */}
+            {authExpanded && (
               <>
                 <div className="space-y-1.5">
-                  <Label htmlFor="header_name">Header Name</Label>
-                  <Input
-                    id="header_name"
-                    placeholder="X-API-Key"
-                    value={form.auth_credentials.header_name ?? ''}
-                    onChange={(e) => setCred('header_name', e.target.value)}
-                  />
+                  <div className="relative">
+                    <select
+                      id="auth_type"
+                      value={form.auth_type}
+                      onChange={(e) => {
+                        set('auth_type', e.target.value as AuthType)
+                        set('auth_credentials', {})
+                      }}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm appearance-none pr-8 focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                      {(Object.entries(AUTH_LABELS) as [AuthType, string][]).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 pointer-events-none text-muted-foreground" />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="header_value">Header Value</Label>
-                  <Input
-                    id="header_value"
-                    type="password"
-                    placeholder="your-api-key"
-                    value={form.auth_credentials.header_value ?? ''}
-                    onChange={(e) => setCred('header_value', e.target.value)}
-                  />
-                </div>
-              </>
-            )}
 
-            {form.auth_type === 'basic' && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="basic_user">Username</Label>
-                  <Input
-                    id="basic_user"
-                    placeholder="username"
-                    value={form.auth_credentials.username ?? ''}
-                    onChange={(e) => setCred('username', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="basic_pass">Password</Label>
-                  <Input
-                    id="basic_pass"
-                    type="password"
-                    placeholder="password"
-                    value={form.auth_credentials.password ?? ''}
-                    onChange={(e) => setCred('password', e.target.value)}
-                  />
-                </div>
-              </div>
+                {form.auth_type === 'bearer' && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bearer_token">Bearer Token</Label>
+                    <Input
+                      id="bearer_token"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder={isEditMode ? '(leave blank to keep existing)' : 'sk-...'}
+                      value={form.auth_credentials.token ?? ''}
+                      onChange={(e) => setCred('token', e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {form.auth_type === 'api_key_header' && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="header_name">Header Name</Label>
+                      <Input
+                        id="header_name"
+                        autoComplete="off"
+                        placeholder="X-API-Key"
+                        value={form.auth_credentials.header_name ?? ''}
+                        onChange={(e) => setCred('header_name', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="header_value">Header Value</Label>
+                      <Input
+                        id="header_value"
+                        type="password"
+                        autoComplete="new-password"
+                        placeholder={isEditMode ? '(leave blank to keep existing)' : 'your-api-key'}
+                        value={form.auth_credentials.header_value ?? ''}
+                        onChange={(e) => setCred('header_value', e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {form.auth_type === 'basic' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="basic_user">Username</Label>
+                      <Input
+                        id="basic_user"
+                        autoComplete="off"
+                        placeholder="username"
+                        value={form.auth_credentials.username ?? ''}
+                        onChange={(e) => setCred('username', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="basic_pass">Password</Label>
+                      <Input
+                        id="basic_pass"
+                        type="password"
+                        autoComplete="new-password"
+                        placeholder={isEditMode ? '(leave blank to keep existing)' : 'password'}
+                        value={form.auth_credentials.password ?? ''}
+                        onChange={(e) => setCred('password', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
