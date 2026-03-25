@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Activity, ExternalLink, Trash2 } from 'lucide-react'
+import { Activity, ExternalLink, Lock, Trash2 } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -160,9 +160,16 @@ export function ServerTable() {
               <TableRow key={server.id} className="group">
                 <TableCell>
                   <div>
-                    <Link href={`/servers/${server.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
-                      {server.name}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link href={`/servers/${server.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                        {server.name}
+                      </Link>
+                      {server.has_credentials && (
+                        <span title={`Auth: ${server.auth_type}`}>
+                          <Lock className="w-3 h-3 text-muted-foreground" />
+                        </span>
+                      )}
+                    </div>
                     {server.description && (
                       <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate max-w-[200px] hidden sm:block">
                         {server.description}

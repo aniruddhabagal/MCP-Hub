@@ -1,4 +1,14 @@
 // Server registry
+export type AuthType = 'none' | 'bearer' | 'api_key_header' | 'basic'
+
+export interface AuthCredentials {
+  token?: string             // bearer
+  header_name?: string       // api_key_header
+  header_value?: string      // api_key_header
+  username?: string           // basic
+  password?: string           // basic
+}
+
 export interface Server {
   id: string
   name: string
@@ -8,6 +18,8 @@ export interface Server {
   owner: string | null
   version: string | null
   tags: string[]
+  auth_type: AuthType | null
+  has_credentials: boolean
   created_at: string
   updated_at: string
 }
@@ -19,6 +31,8 @@ export interface ServerCreate {
   owner?: string
   version?: string
   tags?: string[]
+  auth_type?: AuthType
+  auth_credentials?: AuthCredentials
 }
 
 export interface ServerUpdate {
@@ -29,6 +43,8 @@ export interface ServerUpdate {
   version?: string
   tags?: string[]
   status?: Server['status']
+  auth_type?: AuthType
+  auth_credentials?: AuthCredentials
 }
 
 // Health

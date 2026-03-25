@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, String, func
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -24,6 +25,13 @@ class MCPServer(Base):
     version: Mapped[str | None] = mapped_column(String(50))
     tags: Mapped[list[str] | None] = mapped_column(ARRAY(String))
     status: Mapped[str] = mapped_column(String(50), default="unknown")
+    # Auth: "none" | "bearer" | "api_key_header" | "basic" | None (= none)
+    auth_type: Mapped[str | None] = mapped_column(String(50), nullable=True, default=None)
+    # JSONB blob — shape depends on auth_type:
+    #   bearer:         {"token": "..."}
+    #   api_key_header: {"header_name": "X-API-Key", "header_value": "..."}
+    #   basic:          {"username": "...", "password": "..."}
+    auth_credentials: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

@@ -21,6 +21,7 @@ from app.database import get_db
 from app.dependencies.auth import get_workspace_from_any_auth
 from app.models.server import MCPServer
 from app.models.tool_call import ToolCall
+from app.utils.mcp_client import build_auth_headers
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
 
@@ -55,13 +56,21 @@ def _parse_sse(raw: bytes) -> bytes:
     return raw
 
 
-async def _get_session_id(endpoint: str) -> str | None:
+async def _get_session_id(
+    endpoint: str,
+    extra_headers: dict[str, str] | None = None,
+) -> str | None:
     try:
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+            **(extra_headers or {}),
+        }
         async with httpx.AsyncClient(timeout=_INIT_TIMEOUT) as client:
             resp = await client.post(
                 endpoint,
                 json=_INIT_PAYLOAD,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
             )
         return resp.headers.get("mcp-session-id")
     except Exception:
@@ -134,9 +143,14 @@ async def proxy_mcp(
     response_body = b""
 
     try:
-        upstream_headers: dict[str, str] = {"Content-Type": "application/json"}
+        server_auth = build_auth_headers(server.auth_type, server.auth_credentials)
+        upstream_headers: dict[str, str] = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+            **server_auth,
+        }
         if method != "initialize":
-            session_id = await _get_session_id(server.endpoint)
+            session_id = await _get_session_id(server.endpoint, extra_headers=server_auth)
             if session_id:
                 upstream_headers["mcp-session-id"] = session_id
 

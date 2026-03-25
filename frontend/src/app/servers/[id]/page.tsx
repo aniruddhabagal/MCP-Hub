@@ -9,7 +9,8 @@ import {
   Tag,
   User,
   GitBranch,
-  Clock,
+  Lock,
+  Unlock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/badge'
@@ -119,11 +120,13 @@ export default function ServerDetailPage({
             value: <span className="font-mono text-sm">{server.version ?? '—'}</span>,
           },
           {
-            icon: <Clock className="w-3.5 h-3.5" />,
-            label: 'Last Updated',
+            icon: server.has_credentials ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />,
+            label: 'Auth',
             value: (
-              <span className="font-mono text-xs text-muted-foreground">
-                {formatRelativeTime(server.updated_at)}
+              <span className="font-mono text-sm">
+                {server.auth_type && server.auth_type !== 'none'
+                  ? server.auth_type.replace('_', ' ')
+                  : 'None'}
               </span>
             ),
           },

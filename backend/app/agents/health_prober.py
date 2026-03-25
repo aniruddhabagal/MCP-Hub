@@ -16,14 +16,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.health_check import HealthCheck
 from app.models.server import MCPServer
 from app.redis_client import get_redis
-from app.utils.mcp_client import probe_server
+from app.utils.mcp_client import build_auth_headers, probe_server
 
 logger = logging.getLogger(__name__)
 _GLOBAL_CHANNEL = "mcphub:dashboard"
 
 
 async def _probe_one(server: MCPServer, db: AsyncSession) -> dict:
-    result = await probe_server(server.endpoint)
+    auth_headers = build_auth_headers(server.auth_type, server.auth_credentials)
+    result = await probe_server(server.endpoint, auth_headers=auth_headers)
 
     check = HealthCheck(
         id=uuid.uuid4(),
