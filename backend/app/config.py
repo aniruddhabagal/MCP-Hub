@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = "postgresql+asyncpg://mcphub:mcphub@localhost:5432/mcphub"
+    database_url_direct: str = ""  # Non-pooler URL for DDL migrations (Neon)
     redis_url: str = "redis://localhost:6379"
     app_env: str = "development"
     secret_key: str = "changeme"
