@@ -30,6 +30,7 @@ export const DEMO_WORKSPACE: Workspace = {
   name: 'Acme Corp',
   slug: 'acme-corp',
   created_at: new Date(Date.now() - 30 * 24 * 3_600_000).toISOString(),
+  is_personal: false,
 }
 
 // ── Auth state ────────────────────────────────────────────────────────────────
@@ -43,6 +44,7 @@ export interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   pendingInvites: PendingInvite[]
+  canCreateWorkspace: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, displayName: string, password: string, inviteToken?: string) => Promise<void>
   logout: () => void
@@ -114,9 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       setUser(data.user)
       const cw = data.current_workspace
-      setWorkspace({ id: cw.id, name: cw.name, slug: cw.slug, created_at: '' })
+      setWorkspace({ id: cw.id, name: cw.name, slug: cw.slug, created_at: '', is_personal: cw.is_personal })
       setRole(cw.role)
-      setWorkspaces(data.workspaces.map((w) => ({ id: w.id, name: w.name, slug: w.slug, created_at: '' })))
+      setWorkspaces(data.workspaces.map((w) => ({ id: w.id, name: w.name, slug: w.slug, created_at: '', is_personal: w.is_personal })))
       setPendingInvites(data.pending_invites ?? [])
     } catch {
       // session invalid — clear
@@ -194,21 +196,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const switchWorkspace = useCallback(async (workspaceId: string) => {
     const token = getAccessToken()
     if (!token) return
-    try {
-      const data = await fetchRaw<TokenResponse>('/auth/switch-workspace', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ workspace_id: workspaceId }),
-      })
-      setAccessToken(data.access_token)
-      localStorage.setItem(REFRESH_KEY, data.refresh_token)
-      setRole(getRoleFromToken(data.access_token))
-      const ws = workspaces.find((w) => w.id === workspaceId)
-      if (ws) setWorkspace(ws)
-    } catch {
-      // ignore
-    }
-  }, [workspaces])
+    const data = await fetchRaw<TokenResponse>('/auth/switch-workspace', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ workspace_id: workspaceId }),
+    })
+    setAccessToken(data.access_token)
+    localStorage.setItem(REFRESH_KEY, data.refresh_token)
+    setRole(getRoleFromToken(data.access_token))
+    await loadMe(data.access_token)
+  }, [loadMe])
 
   const acceptInvite = useCallback(async (token: string) => {
     const accessToken = getAccessToken()
@@ -223,6 +220,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadMe(data.access_token)
   }, [loadMe])
 
+  // User can create a workspace only if they belong to no non-personal workspace
+  const canCreateWorkspace = !workspaces.some((w) => !w.is_personal)
+
   const value: AuthState = {
     user,
     workspace,
@@ -232,6 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user,
     isLoading,
     pendingInvites,
+    canCreateWorkspace,
     login,
     signup,
     logout,

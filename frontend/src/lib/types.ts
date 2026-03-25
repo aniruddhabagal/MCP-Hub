@@ -195,6 +195,7 @@ export interface Workspace {
   name: string
   slug: string
   created_at: string
+  is_personal?: boolean
 }
 
 export type WorkspaceRole = 'owner' | 'admin' | 'member'
@@ -245,6 +246,7 @@ export interface WorkspaceSummary {
   name: string
   slug: string
   role: WorkspaceRole
+  is_personal?: boolean
 }
 
 export interface PendingInvite {

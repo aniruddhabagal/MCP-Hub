@@ -47,6 +47,7 @@ class WorkspaceSummary(BaseModel):
     name: str
     slug: str
     role: str  # owner | admin | member
+    is_personal: bool = False
 
 
 class PendingInviteResponse(BaseModel):

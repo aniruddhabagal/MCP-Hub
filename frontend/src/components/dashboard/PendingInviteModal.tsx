@@ -23,10 +23,11 @@ export function PendingInviteModal() {
 
   useEffect(() => {
     if (!pendingInvites || pendingInvites.length === 0) return
-    // Only show once per session
-    if (sessionStorage.getItem(SHOWN_KEY)) return
+    // Show once per unique set of pending invites (keyed by sorted tokens)
+    const inviteKey = pendingInvites.map((i) => i.token).sort().join(',')
+    if (sessionStorage.getItem(SHOWN_KEY) === inviteKey) return
     setOpen(true)
-    sessionStorage.setItem(SHOWN_KEY, '1')
+    sessionStorage.setItem(SHOWN_KEY, inviteKey)
   }, [pendingInvites])
 
   const handleAccept = async (invite: PendingInvite) => {

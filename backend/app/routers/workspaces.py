@@ -65,11 +65,23 @@ async def create_workspace(
     user, _, _ = ctx
     slug = body.slug or _slugify(body.name)
 
+    # Reject if user already belongs to any non-personal workspace
+    org_result = await db.execute(
+        select(WorkspaceMember)
+        .join(Workspace, WorkspaceMember.workspace_id == Workspace.id)
+        .where(WorkspaceMember.user_id == user.id, Workspace.is_personal == False)  # noqa: E712
+    )
+    if org_result.first() and not user.is_superadmin:
+        raise HTTPException(
+            status_code=400,
+            detail="Leave your current organization workspace before creating a new one",
+        )
+
     exists = await db.execute(select(Workspace).where(Workspace.slug == slug))
     if exists.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Slug already in use")
 
-    workspace = Workspace(name=body.name, slug=slug)
+    workspace = Workspace(name=body.name, slug=slug, is_personal=False)
     db.add(workspace)
     await db.flush()
 
@@ -77,7 +89,7 @@ async def create_workspace(
     db.add(member)
     await db.flush()
 
-    return WorkspaceSummary(id=workspace.id, name=workspace.name, slug=workspace.slug, role="owner")
+    return WorkspaceSummary(id=workspace.id, name=workspace.name, slug=workspace.slug, role="owner", is_personal=False)
 
 
 @router.get("", response_model=list[WorkspaceSummary])
@@ -93,7 +105,7 @@ async def list_workspaces(
         .order_by(WorkspaceMember.joined_at)
     )
     return [
-        WorkspaceSummary(id=ws.id, name=ws.name, slug=ws.slug, role=m.role)
+        WorkspaceSummary(id=ws.id, name=ws.name, slug=ws.slug, role=m.role, is_personal=ws.is_personal)
         for m, ws in result.all()
     ]
 
@@ -109,7 +121,7 @@ async def get_workspace(
     # If super admin, role isn't from membership
     if user.is_superadmin and ws.id != current_ws.id:
         role = "owner"
-    return WorkspaceSummary(id=ws.id, name=ws.name, slug=ws.slug, role=role)
+    return WorkspaceSummary(id=ws.id, name=ws.name, slug=ws.slug, role=role, is_personal=ws.is_personal)
 
 
 @router.patch("/{workspace_id}", response_model=WorkspaceSummary)
@@ -122,6 +134,9 @@ async def update_workspace(
     user, current_ws, role = ctx
     ws = await _resolve_workspace(workspace_id, ctx, db)
 
+    if ws.is_personal:
+        raise HTTPException(status_code=400, detail="Cannot rename personal workspace")
+
     if body.slug and body.slug != ws.slug:
         exists = await db.execute(select(Workspace).where(Workspace.slug == body.slug))
         if exists.scalar_one_or_none():
@@ -133,7 +148,7 @@ async def update_workspace(
         ws.slug = body.slug
 
     await db.flush()
-    return WorkspaceSummary(id=ws.id, name=ws.name, slug=ws.slug, role=role)
+    return WorkspaceSummary(id=ws.id, name=ws.name, slug=ws.slug, role=role, is_personal=ws.is_personal)
 
 
 @router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -143,6 +158,8 @@ async def delete_workspace(
     db: AsyncSession = Depends(get_db),
 ):
     ws = await _resolve_workspace(workspace_id, ctx, db)
+    if ws.is_personal:
+        raise HTTPException(status_code=400, detail="Cannot delete your personal workspace")
     await db.delete(ws)
 
 
@@ -286,7 +303,7 @@ async def remove_member(
     db: AsyncSession = Depends(get_db),
 ):
     caller, _, caller_role = ctx
-    await _resolve_workspace(workspace_id, ctx, db)
+    ws = await _resolve_workspace(workspace_id, ctx, db)
 
     result = await db.execute(
         select(WorkspaceMember).where(
@@ -300,6 +317,10 @@ async def remove_member(
 
     is_self = caller.id == user_id
     is_admin_plus = caller_role in ("admin", "owner") or caller.is_superadmin
+
+    # Prevent leaving a personal workspace
+    if ws.is_personal and is_self:
+        raise HTTPException(status_code=400, detail="Cannot leave your personal workspace")
 
     if not is_self and not is_admin_plus:
         raise HTTPException(status_code=403, detail="Insufficient permissions")

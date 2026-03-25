@@ -22,6 +22,16 @@ export function WorkspaceGeneralSettings() {
 
   if (!workspace) return null
 
+  if (workspace.is_personal) {
+    return (
+      <div className="rounded border border-border bg-secondary/20 px-5 py-8 text-center">
+        <p className="text-sm font-mono text-muted-foreground">
+          Personal workspace settings cannot be modified.
+        </p>
+      </div>
+    )
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isDemoMode()) { toast.info('Not available in demo mode'); return }

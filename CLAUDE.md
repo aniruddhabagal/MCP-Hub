@@ -420,6 +420,19 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] `PendingInviteModal.tsx` — one-time modal on first login with pending invites (sessionStorage flag); uses shadcn Dialog
 - [x] `dashboard/page.tsx` — mount `PendingInviteModal` + `PendingInviteBanner`
 
+### Week 15 — Workspace UX & Edge Case Fixes
+- [x] `Workspace` model — add `is_personal` boolean column
+- [x] Alembic migration `0004_workspace_is_personal.py` — add column + backfill existing personal workspaces
+- [x] `schemas/auth.py` — add `is_personal` to `WorkspaceSummary`
+- [x] `routers/auth.py` — personal workspace named "Personal Workspace" (not user-derived); propagate `is_personal` in workspace summaries
+- [x] `routers/workspaces.py` — creation constraint (block if user already in org workspace); guard delete/rename/leave on personal workspace
+- [x] `lib/types.ts` — add `is_personal` to `Workspace` and `WorkspaceSummary`
+- [x] `lib/auth.ts` — fix `switchWorkspace` to call `loadMe()` (fixes 422 cascade); add `canCreateWorkspace` derived state; propagate `is_personal`
+- [x] `WorkspaceSwitcher.tsx` — wire "New workspace" button; disable with tooltip when in org workspace
+- [x] `CreateWorkspaceModal.tsx` — new modal (name + auto-slug + validation); switches into new workspace on create
+- [x] `PendingInviteModal.tsx` — fix session key to re-show modal for new invite sets
+- [x] `WorkspaceGeneralSettings.tsx` — hide edit/delete for personal workspaces
+
 ---
 
 ## Why This Is a Real Gap Right Now

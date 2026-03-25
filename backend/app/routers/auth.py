@@ -59,7 +59,7 @@ async def _get_user_workspaces(user_id: uuid.UUID, db: AsyncSession) -> list[Wor
     )
     rows = result.all()
     return [
-        WorkspaceSummary(id=ws.id, name=ws.name, slug=ws.slug, role=member.role)
+        WorkspaceSummary(id=ws.id, name=ws.name, slug=ws.slug, role=member.role, is_personal=ws.is_personal)
         for member, ws in rows
     ]
 
@@ -114,8 +114,7 @@ async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)):
         slug = f"{base_slug}-{counter}"
         counter += 1
 
-    workspace_name = f"{body.display_name or body.email.split('@')[0]}'s Workspace"
-    personal_ws = Workspace(name=workspace_name, slug=slug)
+    personal_ws = Workspace(name="Personal Workspace", slug=slug, is_personal=True)
     db.add(personal_ws)
     await db.flush()
 
