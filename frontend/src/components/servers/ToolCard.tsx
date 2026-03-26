@@ -13,9 +13,11 @@ interface ToolCardProps {
 }
 
 function getParamSummary(schema: MCPToolDefinition['inputSchema']): string {
-  if (!schema?.properties) return 'No parameters'
-  const total = Object.keys(schema.properties).length
-  const required = schema.required?.length ?? 0
+  if (!schema) return 'No parameters'
+  const properties = schema.properties as Record<string, unknown> | undefined
+  if (!properties) return 'No parameters'
+  const total = Object.keys(properties).length
+  const required = (schema.required as string[] | undefined)?.length ?? 0
   if (total === 0) return 'No parameters'
   const parts = [`${total} param${total !== 1 ? 's' : ''}`]
   if (required > 0) parts.push(`${required} required`)

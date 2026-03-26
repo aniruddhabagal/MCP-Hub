@@ -379,7 +379,7 @@ export interface ImpersonateResponse {
 export interface MCPToolDefinition {
   name: string
   description: string | null
-  inputSchema: Record<string, any> | null
+  inputSchema: Record<string, unknown> | null
 }
 
 export interface ToolListResponse {
@@ -390,13 +390,13 @@ export interface ToolListResponse {
 
 export interface ToolInvokeRequest {
   tool_name: string
-  arguments: Record<string, any>
+  arguments: Record<string, unknown>
 }
 
 export interface ToolInvokeResponse {
   tool_name: string
   status: 'success' | 'error'
-  result: any | null
+  result: unknown
   error: string | null
   duration_ms: number
   tool_call_id: string

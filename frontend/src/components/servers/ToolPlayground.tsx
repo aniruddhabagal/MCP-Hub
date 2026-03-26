@@ -22,12 +22,13 @@ interface ToolPlaygroundProps {
   onClose: () => void
 }
 
-function buildDefaultValues(schema: MCPToolDefinition['inputSchema']): Record<string, any> {
+function buildDefaultValues(schema: MCPToolDefinition['inputSchema']): Record<string, unknown> {
   if (!schema?.properties) return {}
-  const defaults: Record<string, any> = {}
+  const defaults: Record<string, unknown> = {}
   for (const [key, prop] of Object.entries(schema.properties)) {
-    if ((prop as any).default !== undefined) {
-      defaults[key] = (prop as any).default
+    const p = prop as Record<string, unknown>
+    if (p.default !== undefined) {
+      defaults[key] = p.default
     }
   }
   return defaults
@@ -35,7 +36,7 @@ function buildDefaultValues(schema: MCPToolDefinition['inputSchema']): Record<st
 
 function validateRequired(
   schema: MCPToolDefinition['inputSchema'],
-  values: Record<string, any>
+  values: Record<string, unknown>
 ): string[] {
   if (!schema?.required) return []
   return (schema.required as string[]).filter(
@@ -45,7 +46,7 @@ function validateRequired(
 
 export function ToolPlayground({ serverId, tool, open, onClose }: ToolPlaygroundProps) {
   const [mode, setMode] = useState<'form' | 'json'>('form')
-  const [formValues, setFormValues] = useState<Record<string, any>>(
+  const [formValues, setFormValues] = useState<Record<string, unknown>>(
     () => buildDefaultValues(tool.inputSchema)
   )
   const [rawJson, setRawJson] = useState('{}')
@@ -59,7 +60,7 @@ export function ToolPlayground({ serverId, tool, open, onClose }: ToolPlayground
     ? validateRequired(tool.inputSchema, formValues)
     : []
 
-  function handleFieldChange(key: string, value: any) {
+  function handleFieldChange(key: string, value: unknown) {
     setFormValues((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -71,7 +72,7 @@ export function ToolPlayground({ serverId, tool, open, onClose }: ToolPlayground
   }
 
   async function handleRun() {
-    let args: Record<string, any> = {}
+    let args: Record<string, unknown> = {}
 
     if (mode === 'form') {
       // Strip undefined / empty string values for optional fields

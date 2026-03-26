@@ -28,8 +28,8 @@ interface JsonSchema {
 
 interface SchemaFormProps {
   schema: JsonSchema | null | undefined
-  values: Record<string, any>
-  onChange: (key: string, value: any) => void
+  values: Record<string, unknown>
+  onChange: (key: string, value: unknown) => void
   disabled?: boolean
 }
 
@@ -128,7 +128,7 @@ export function SchemaForm({ schema, values, onChange, disabled }: SchemaFormPro
                 type="number"
                 className="h-8 text-xs font-mono"
                 placeholder={prop.default !== undefined ? String(prop.default) : '0'}
-                value={value ?? ''}
+                value={(value as number | string | undefined) ?? ''}
                 onChange={(e) =>
                   onChange(key, e.target.value === '' ? undefined : Number(e.target.value))
                 }
@@ -139,7 +139,7 @@ export function SchemaForm({ schema, values, onChange, disabled }: SchemaFormPro
                 type="text"
                 className="h-8 text-xs font-mono"
                 placeholder={prop.default !== undefined ? String(prop.default) : `Enter ${label}…`}
-                value={value ?? ''}
+                value={(value as string | undefined) ?? ''}
                 onChange={(e) => onChange(key, e.target.value)}
                 disabled={disabled}
               />
