@@ -446,6 +446,24 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] `servers/[id]/page.tsx` — auth type shown in server metadata row
 - [x] `lib/demo-data.ts` — update mock servers with auth fields
 
+### Week 17 — Tool Playground (In Progress)
+- [ ] `utils/mcp_client.py` — extract `parse_sse`, `get_session_id` from proxy; add `send_mcp_request` generic JSON-RPC helper
+- [ ] `routers/proxy.py` — import shared functions from mcp_client, remove local defs
+- [ ] `schemas/tools.py` — `ToolDefinition`, `ToolListResponse`, `ToolInvokeRequest`, `ToolInvokeResponse`
+- [ ] `routers/tools.py` — `GET /servers/{id}/tools` (cached, L1+), `POST /servers/{id}/tools/invoke` (logged, L2+), `DELETE /servers/{id}/tools/cache`
+- [ ] `main.py` — register tools router
+- [ ] `tests/test_tools.py` — list, cache, invoke, permissions, workspace isolation
+- [ ] `lib/types.ts` — `MCPToolDefinition`, `ToolListResponse`, `ToolInvokeRequest`, `ToolInvokeResponse`
+- [ ] `lib/api.ts` — `getServerTools`, `invokeServerTool`, `invalidateToolsCache`
+- [ ] `lib/hooks.ts` — `QK.serverTools`, `useServerTools`, `useInvokeTool`, `useInvalidateToolsCache`
+- [ ] `SchemaForm.tsx` — dynamic JSON Schema → form (string/number/boolean/enum; complex → JSON textarea)
+- [ ] `ToolCard.tsx` — tool display card with "Test" button (admin/owner only)
+- [ ] `ToolPlayground.tsx` — test dialog: form/raw-JSON toggle, result viewer, audit log link
+- [ ] `ToolsTab.tsx` — tab content: tool grid, search, cached badge, refresh
+- [ ] `servers/[id]/page.tsx` — add "Tools" tab as default first tab with count badge
+- [ ] `lib/demo-data.ts` — `DEMO_SERVER_TOOLS` with 3–5 tools per demo server + JSON Schema
+- [ ] `lib/demo-mode.ts` — route matchers for tools list, invoke, cache invalidation
+
 ---
 
 ## Why This Is a Real Gap Right Now

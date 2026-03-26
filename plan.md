@@ -1,314 +1,265 @@
-# Plan: Fix Multi-Tenant Invite & Workspace Flow Edge Cases
+# Tool Playground — Dynamic Tool Discovery & Testing
 
-## Context
+## Feature Overview
 
-The signup/invite/workspace flow works for individuals but breaks down for company/org use. When an admin invites employees, several edge cases cause confusion: employees who sign up before seeing their invite get stuck with orphan workspaces; the `?next=` redirect after login/signup is broken so users never return to the invite page; there's no visibility into pending invites; login always defaults to the personal workspace; and **invite emails are never sent** — the invite token is only returned in the API response with no delivery mechanism. This plan fixes all of these and adds Resend email delivery for invites.
+Add a **Tool Playground** to MCPHub: dynamically fetch tools from any registered MCP server via JSON-RPC `tools/list`, browse them with their JSON Schema inputs, and let admin/owner users invoke them with custom arguments — all logged to the existing `tool_calls` audit trail.
 
----
+## Architecture
 
-## Edge Cases Being Fixed
-
-1. **`?next=` redirect is broken** — Login/signup always redirect to `/dashboard`, ignoring the `?next=/invite/{token}` param.
-2. **Signup via invite creates unnecessary friction** — User signs up, lands on dashboard, has to re-click invite link.
-3. **No pending invite visibility** — No way to discover pending invites except the original link.
-4. **No invite emails sent** — Invite token is only returned in the API response. If the admin doesn't manually share it, the invitee never learns about the invite.
-5. **Login always defaults to personal workspace** — Should prefer org workspace, then last-used, then personal.
-6. **Role upgrade via invite fails** — Re-inviting a member as admin returns `400 "Already a member"`.
-7. **Accept-invite doesn't store tokens** — `apiAcceptInvite` types response as `{ message: string }` but backend returns `TokenResponse`.
-
----
-
-## Implementation Plan
-
-### Step 1: Add `resend` dependency + config
-
-**File:** `backend/requirements.txt`
-
-- Add `resend==2.5.0`
-
-**File:** `backend/app/config.py`
-
-- Add settings:
-  ```python
-  resend_api_key: str = ""
-  frontend_url: str = "http://localhost:3000"
-  ```
-
-**File:** `.env.example`
-
-- Add:
-  ```
-  RESEND_API_KEY=re_xxxxxxxxxxxx
-  FRONTEND_URL=http://localhost:3000
-  ```
-
----
-
-### Step 2: Create email utility — `backend/app/utils/email.py`
-
-**New file:** `backend/app/utils/email.py`
-
-Sends invite emails via Resend SDK. Fire-and-forget pattern (matches existing `notifiers.py` style — log failures, never raise).
-
-```python
-import logging
-import resend
-from app.config import settings
-
-logger = logging.getLogger(__name__)
-
-async def send_invite_email(
-    to_email: str,
-    workspace_name: str,
-    invite_token: str,
-    role: str,
-    invited_by_name: str | None = None,
-) -> None:
-    if not settings.resend_api_key:
-        logger.info("RESEND_API_KEY not set, skipping invite email to %s", to_email)
-        return
-
-    resend.api_key = settings.resend_api_key
-    invite_url = f"{settings.frontend_url}/invite/{invite_token}"
-
-    # Build HTML email (clean, minimal styling)
-    html = f"""..."""  # Invite email template with workspace name, role, CTA button
-
-    try:
-        resend.Emails.send({
-            "from": "MCPHub <contact@mail.aniruddha.fyi>",
-            "to": [to_email],
-            "subject": f"You've been invited to join {workspace_name} on MCPHub",
-            "html": html,
-        })
-    except Exception as exc:
-        logger.warning("Invite email delivery failed (to=%s): %s", to_email, exc)
+```
+┌─────────────┐   GET /servers/{id}/tools     ┌──────────────┐   JSON-RPC tools/list   ┌────────────┐
+│  Frontend    │ ─────────────────────────────▶│  Backend     │ ───────────────────────▶│ MCP Server │
+│  ToolsTab    │                               │  tools.py    │ ◀───────────────────────│            │
+│              │ ◀─────────────────────────────│  (cached)    │                         └────────────┘
+│              │   { tools: [...], cached }    │              │
+│  Playground  │   POST /servers/{id}/tools/invoke            │   JSON-RPC tools/call
+│  SchemaForm  │ ─────────────────────────────▶│  logs to     │ ───────────────────────▶
+│              │ ◀─────────────────────────────│  tool_calls  │ ◀───────────────────────
+│              │   { result, duration, id }    └──────────────┘
+└─────────────┘
 ```
 
-Key design decisions:
+## Phase 1: Backend
 
-- From address: `MCPHub <contact@mail.aniruddha.fyi>` (domain: `mail.aniruddha.fyi`)
-- Graceful degradation: if `RESEND_API_KEY` is empty, skip silently (dev environments)
-- The SDK's `Emails.send()` is synchronous — call it directly (it's a simple HTTP POST, fast enough for serverless)
+### 1.1 Refactor `mcp_client.py` (MODIFY)
 
----
+Extract shared MCP protocol utilities from `proxy.py` into `mcp_client.py`:
+- `parse_sse(raw: bytes) -> bytes` — extract JSON from SSE event stream
+- `get_session_id(endpoint, extra_headers) -> str | None` — initialize handshake to get session ID
+- `send_mcp_request(endpoint, method, params, auth_headers, timeout) -> tuple[result, duration_ms, error]` — generic JSON-RPC request handler; used by both proxy and the new tools router
 
-### Step 3: Alembic migration — add `last_workspace_id` to User
+### 1.2 Update `proxy.py` (MODIFY)
 
-**File:** `backend/app/models/user.py`
+- Import `parse_sse`, `get_session_id` from `app.utils.mcp_client`
+- Remove their local definitions
+- No behavioral changes
 
-- Add column: `last_workspace_id = Column(UUID, ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True)`
+### 1.3 Create `schemas/tools.py` (CREATE)
 
-**New file:** `backend/alembic/versions/0003_user_last_workspace.py`
+```python
+class ToolDefinition(BaseModel):
+    name: str
+    description: str | None = None
+    inputSchema: dict[str, Any] | None = None   # JSON Schema
 
-- Add `last_workspace_id` UUID column to `users` table, nullable, FK to `workspaces.id` with SET NULL on delete
+class ToolListResponse(BaseModel):
+    tools: list[ToolDefinition]
+    server_id: uuid.UUID
+    cached: bool = False
 
----
+class ToolInvokeRequest(BaseModel):
+    tool_name: str
+    arguments: dict[str, Any] = {}
 
-### Step 4: Backend schemas — `PendingInviteResponse`, update `SignupRequest`, update `MeResponse`
+class ToolInvokeResponse(BaseModel):
+    tool_name: str
+    status: str            # "success" | "error"
+    result: Any | None     # content array from MCP response
+    error: str | None
+    duration_ms: float
+    tool_call_id: uuid.UUID
+    truncated: bool = False
+```
 
-**File:** `backend/app/schemas/auth.py`
+### 1.4 Create `routers/tools.py` (CREATE)
 
-- Add `invite_token: str | None = None` to `SignupRequest`
-- Add new schema:
-  ```python
-  class PendingInviteResponse(BaseModel):
-      token: str
-      workspace_name: str
-      workspace_id: uuid.UUID
-      role: str
-      expires_at: datetime
-  ```
-- Add `pending_invites: list[PendingInviteResponse] = []` to `MeResponse`
+Three endpoints under `/servers/{server_id}/tools`:
 
----
+| Endpoint | Auth | Description |
+|---|---|---|
+| `GET /servers/{id}/tools` | L1+ (any member) | Fetch tools via `tools/list`, Redis-cached 5min |
+| `POST /servers/{id}/tools/invoke` | L2+ (admin/owner) | Invoke tool, log to `tool_calls` with `caller_agent="mcphub-playground"` |
+| `DELETE /servers/{id}/tools/cache` | L2+ (admin/owner) | Invalidate cached tool list |
 
-### Step 5: Backend auth router — all endpoint changes
+**Caching:** Redis key `tools:{workspace_id}:{server_id}`, TTL 300s
 
-**File:** `backend/app/routers/auth.py`
+**Error handling:**
+- Server unreachable → 502 with message
+- `tools/list` not supported → empty list + warning
+- Response > 1MB → truncate, set `truncated: true`
 
-**5a. Signup with `invite_token` auto-accept (fixes edge case 2)**
+### 1.5 Register router in `main.py` (MODIFY)
 
-- After creating user + personal workspace, check if `body.invite_token` is provided
-- If provided: validate invite (exists, not expired, not accepted, email matches signup email)
-- If valid: create `WorkspaceMember` for the invited workspace, mark invite accepted, issue JWT scoped to the **invited workspace** (not personal), set `user.last_workspace_id`
-- If invalid: silently ignore, issue JWT scoped to personal workspace as normal
-- Personal workspace is always created (safety net)
+Add tools router with `API_PREFIX`.
 
-**5b. Login with smart workspace selection (fixes edge case 5)**
+### 1.6 Create `tests/test_tools.py` (CREATE)
 
-- Change workspace selection from `prefer owned, else first` to:
-  1. Prefer `last_workspace_id` if set and user is still a member
-  2. Else prefer an **org workspace** (one where role != "owner", i.e. user was invited) — this covers the common case where an employee belongs to both personal + company workspaces
-  3. Else prefer owned workspace
-  4. Else first workspace
-- After selection, update `user.last_workspace_id` and flush
-
-**5c. Refresh with same workspace selection (fixes edge case 5)**
-
-- Same selection logic as login
-
-**5d. Switch-workspace updates `last_workspace_id`**
-
-- After successful switch, set `user.last_workspace_id = workspace.id` and flush
-
-**5e. Accept-invite handles role upgrade (fixes edge case 6)**
-
-- In the "already a member" check, instead of raising 400:
-  - If invite role ranks higher than current role (member→admin), upgrade the role
-  - If same or lower rank, raise `400 "Already a member with equal or higher role"`
-  - Role hierarchy: `member=0, admin=1` (owner can never be assigned via invite)
-
-**5f. `/auth/me` returns pending invites (fixes edge case 3)**
-
-- Query `workspace_invites` where `email = user.email AND accepted_at IS NULL AND expires_at > now()`
-- Join with `workspaces` to get workspace name
-- Return as `pending_invites` in `MeResponse`
+- `test_list_tools_success` — mock upstream, verify response shape
+- `test_list_tools_cached` — second request returns `cached: True`
+- `test_list_tools_server_down` — 502 on unreachable server
+- `test_invoke_tool_creates_audit_row` — ToolCall row with `caller_agent="mcphub-playground"`
+- `test_invoke_tool_member_forbidden` — member role gets 403
+- `test_invoke_tool_admin_allowed` — admin succeeds
+- `test_workspace_isolation` — cross-workspace server returns 404
+- `test_invalidate_cache` — cache deleted, next list fetches fresh
 
 ---
 
-### Step 6: Backend workspaces router — send invite emails + duplicate handling
+## Phase 2: Frontend — Types, API, Hooks
 
-**File:** `backend/app/routers/workspaces.py`
+### `types.ts` (MODIFY)
 
-**6a. Send invite email on invite creation (fixes edge case 4)**
+```typescript
+interface MCPToolDefinition {
+  name: string
+  description: string | null
+  inputSchema: Record<string, any> | null
+}
+interface ToolListResponse { tools: MCPToolDefinition[]; server_id: string; cached: boolean }
+interface ToolInvokeRequest { tool_name: string; arguments: Record<string, any> }
+interface ToolInvokeResponse {
+  tool_name: string; status: 'success' | 'error'; result: any | null
+  error: string | null; duration_ms: number; tool_call_id: string; truncated: boolean
+}
+```
 
-- In `invite_member` endpoint (line 176), after creating the `WorkspaceInvite` row:
-  - Look up the workspace name (already resolved via `_resolve_workspace`)
-  - Call `send_invite_email(to_email=body.email, workspace_name=ws.name, invite_token=token, role=body.role, invited_by_name=user.display_name)`
-  - Import from `app.utils.email`
+### `api.ts` (MODIFY)
 
-**6b. Duplicate invite handling**
+```typescript
+getServerTools(serverId)          // GET /servers/{id}/tools
+invokeServerTool(serverId, body)  // POST /servers/{id}/tools/invoke
+invalidateToolsCache(serverId)    // DELETE /servers/{id}/tools/cache
+```
 
-- Before creating a new invite, check for existing pending (unaccepted, non-expired) invite for the same email + workspace
-- If found, delete the old one and create the new one (with fresh token + expiry)
-- This prevents token accumulation and allows re-inviting with a different role — the new email will have the correct link
+### `hooks.ts` (MODIFY)
 
----
-
-### Step 7: Frontend types
-
-**File:** `frontend/src/lib/types.ts`
-
-- Add `PendingInvite` interface: `{ token, workspace_name, workspace_id, role, expires_at }`
-- Ensure `MeResponse` includes optional `pending_invites?: PendingInvite[]`
-- Ensure `TokenResponse` type exists and is exported (for accept-invite fix)
-
----
-
-### Step 8: Frontend api.ts — fix `apiAcceptInvite` return type (fixes edge case 7)
-
-**File:** `frontend/src/lib/api.ts` (line 145-146)
-
-- Change `apiFetch<{ message: string }>` to `apiFetch<TokenResponse>`
-- Import `TokenResponse` from types
+- `QK.serverTools(serverId)` → `['servers', serverId, 'tools']`
+- `useServerTools(serverId)` — staleTime 5min
+- `useInvokeTool()` — invalidates `['tool-calls']` on success
+- `useInvalidateToolsCache()` — invalidates serverTools query key on success
 
 ---
 
-### Step 9: Frontend auth.ts — add `inviteToken` to signup, `pendingInvites` to state, `acceptInvite` method
+## Phase 3: Frontend Components
 
-**File:** `frontend/src/lib/auth.ts`
+### `ToolsTab.tsx` (CREATE)
 
-- Add `pendingInvites: PendingInvite[]` to `AuthState` interface
-- Add `acceptInvite: (token: string) => Promise<void>` to `AuthState` interface
-- Update `signup` signature: add optional `inviteToken?: string` param, include in request body as `invite_token`
-- Add `pendingInvites` state, populate from `loadMe` response (`data.pending_invites ?? []`)
-- Add `acceptInvite` method: calls `apiAcceptInvite`, stores returned access_token + refresh_token, calls `loadMe`
+Tab content for server detail page:
+- Uses `useServerTools(serverId)`
+- Search input to filter tools by name/description
+- "Refresh" button + "Cached" badge if `cached: true`
+- Grid of `ToolCard` components
+- States: loading skeleton, empty state, error state
 
----
+### `ToolCard.tsx` (CREATE)
 
-### Step 10: Frontend LoginForm — handle `?next=` redirect (fixes edge case 1)
+Single tool display card:
+- Tool name (monospace), description, param count summary ("3 params, 2 required")
+- "Test" button — only shown for admin/owner (checks `role` from `useAuth()`)
+- Opens `ToolPlayground` dialog
 
-**File:** `frontend/src/components/auth/LoginForm.tsx`
+### `ToolPlayground.tsx` (CREATE)
 
-- Import `useSearchParams` from `next/navigation`
-- Read `next` query param
-- After login success, redirect to `next || '/dashboard'`
-- Validate `next` starts with `/` to prevent open redirect
-- Pass `next` through to signup link: `/signup?next=...`
+Test dialog:
+- **Form mode** (default): renders `SchemaForm` from inputSchema
+- **Raw JSON mode**: textarea for manual JSON input
+- Toggle between modes
+- "Run" button → `useInvokeTool()` → shows result panel
+- Result panel: status badge, duration, formatted JSON output, error display
+- "View in audit log" link via returned `tool_call_id`
+- Loading state + AbortController cancel support
 
-**File:** `frontend/src/app/login/page.tsx`
+### `SchemaForm.tsx` (CREATE)
 
-- Wrap LoginForm usage in `<Suspense>` (required for `useSearchParams` in App Router)
+Dynamic JSON Schema → form renderer (flat schemas only in v1):
 
----
+| JSON Schema type | Form element |
+|---|---|
+| `string` | `<Input type="text">` |
+| `number` / `integer` | `<Input type="number">` |
+| `boolean` | `<Switch>` |
+| `string` + `enum` | `<Select>` |
+| `object` / `array` / complex | Fall back to JSON textarea |
 
-### Step 11: Frontend SignupForm — handle `?next=` redirect + pass invite token (fixes edge case 2)
-
-**File:** `frontend/src/components/auth/SignupForm.tsx`
-
-- Import `useSearchParams`
-- Read `next` query param
-- Extract invite token if `next` matches `/invite/<token>` pattern
-- Pass `inviteToken` to `auth.signup(email, displayName, password, inviteToken)`
-- After signup, redirect to `/dashboard` (backend already auto-accepted via invite_token, JWT scoped to company workspace)
-- If no invite token, redirect to `next || '/dashboard'`
-
-**File:** `frontend/src/app/signup/page.tsx`
-
-- Wrap SignupForm usage in `<Suspense>`
-
----
-
-### Step 12: Frontend invite page — store tokens properly (fixes edge case 7)
-
-**File:** `frontend/src/app/invite/[token]/page.tsx`
-
-- Use `auth.acceptInvite(token)` instead of raw `apiAcceptInvite(token)`
-- This stores the returned JWT tokens and reloads auth state
-- After success, redirect to `/dashboard` (now scoped to correct workspace)
+- Required fields marked with asterisk, validated before submit
+- Default values from schema `default`
+- Descriptions as helper text
+- No inputSchema → "No arguments needed" + Run button enabled
 
 ---
 
-### Step 13: Frontend PendingInviteBanner + one-time modal (fixes edge case 3)
+## Phase 4: Integrate in Server Detail Page
 
-**New file:** `frontend/src/components/dashboard/PendingInviteBanner.tsx`
+**`frontend/src/app/servers/[id]/page.tsx`** (MODIFY)
 
-- Reads `pendingInvites` from `useAuth()`
-- If empty, renders nothing
-- If non-empty, renders a banner for each invite: "You've been invited to join **{workspace_name}** as {role}" with Accept / Dismiss buttons
-- Accept calls `auth.acceptInvite(token)` then reloads
-- Styled consistently with existing dashboard components (use existing card/badge patterns)
-
-**New file:** `frontend/src/components/dashboard/PendingInviteModal.tsx`
-
-- On first login after an invite exists, show a dialog/modal listing pending invites with Accept / Later buttons
-- Track "already shown" in `sessionStorage` (key: `mcphub_invite_modal_shown`) so it only appears once per session
-- Uses shadcn `Dialog` component for consistency
-- After Accept, calls `auth.acceptInvite(token)`, closes modal, refreshes state
-- "Later" dismisses the modal; the dashboard banner remains visible as a fallback
-
-**File:** `frontend/src/app/dashboard/page.tsx`
-
-- Mount `<PendingInviteModal />` (one-time modal)
-- Mount `<PendingInviteBanner />` at the top, before the header (persistent until acted on)
+- Add "Tools" tab as the **first** tab (default selected)
+- Tab trigger shows count badge: `Tools (N)`
+- Tab order: **Tools** | Tool Calls | Alert Events
+- Import and mount `<ToolsTab serverId={id} />`
 
 ---
 
-## Execution Order
+## Phase 5: Demo Mode
 
-1. Steps 1-2 (resend dependency, config, email utility)
-2. Step 3 (migration + model)
-3. Step 4 (schemas)
-4. Steps 5 + 6 (backend router changes — auth + workspaces)
-5. Steps 7 + 8 (frontend types + api fix)
-6. Step 9 (auth.ts)
-7. Steps 10 + 11 (login/signup form redirects)
-8. Step 12 (invite page token storage)
-9. Step 13 (pending invite banner + modal)
+### `demo-data.ts` (MODIFY)
+
+Add `DEMO_SERVER_TOOLS: Record<string, MCPToolDefinition[]>` — 3–5 realistic tools per demo server with full JSON Schema `inputSchema`:
+- `github-mcp`: search_repositories, get_pull_request, create_issue
+- `slack-mcp`: send_message, list_channels, search_messages
+- `jira-mcp`: search_issues, create_ticket, get_board
+- etc.
+
+### `demo-mode.ts` (MODIFY)
+
+Add route matchers:
+- `GET /servers/{id}/tools` → `{ tools: DEMO_SERVER_TOOLS[id], cached: true }`
+- `POST /servers/{id}/tools/invoke` → mock success response (whitelisted before DemoModeError block, like probe)
+- `DELETE /servers/{id}/tools/cache` → whitelisted no-op
 
 ---
 
-## Verification
+## Edge Cases
 
-1. **Invite email delivery:** Admin invites user → Resend email arrives with correct workspace name, role, and invite link pointing to `/invite/{token}`
-2. **Signup via invite link:** Click invite email → "Create account" → signup → should land on company workspace dashboard directly (no second step)
-3. **Login via invite link:** Click invite email → "Sign in" → login → should redirect back to `/invite/{token}` → auto-accept → land on company workspace
-4. **Pending invites modal (first login):** Login normally with pending invite → modal appears once → click Accept → switch to company workspace. Refresh page → modal does NOT reappear (sessionStorage flag), but banner still visible
-5. **Pending invites banner:** Dismiss modal → dashboard banner still shows pending invites → click Accept → switch to company workspace
-6. **Role upgrade:** Invite existing member with higher role → accept → role is upgraded
-7. **Workspace default preference:** User in both personal + org workspaces → logout → login → should default to org workspace (not personal)
-8. **Last workspace memory:** Switch to a specific workspace → logout → login → should default to that workspace
-9. **Accept-invite stores tokens:** Accept invite → verify JWT is updated, workspace switcher shows new workspace
-10. **Personal workspace still exists:** After all flows, personal workspace remains accessible in switcher
-11. **Graceful degradation:** If `RESEND_API_KEY` is empty (dev), invite creation still succeeds, just no email sent
+| Edge Case | Handling |
+|---|---|
+| Server unreachable | 502; UI shows error state with retry button |
+| `tools/list` not supported | Return empty list with explanatory banner |
+| Tool invocation timeout | 120s timeout; frontend shows cancel button |
+| Response > 1MB | Truncate, `truncated: true` flag; UI notice |
+| Complex nested schemas | Fall back to Raw JSON textarea in v1 |
+| No input parameters | "No arguments needed" + Run immediately |
+| Expired/invalid auth | Forward upstream error to result panel |
+| SSE response format | Reuses existing `parse_sse()` |
+| Concurrent invocations | Disable Run button while pending |
+
+---
+
+## File Change Summary
+
+| File | Action |
+|---|---|
+| `backend/app/utils/mcp_client.py` | MODIFY — add `parse_sse`, `get_session_id`, `send_mcp_request` |
+| `backend/app/routers/proxy.py` | MODIFY — import shared functions, remove local defs |
+| `backend/app/schemas/tools.py` | CREATE |
+| `backend/app/routers/tools.py` | CREATE |
+| `backend/app/main.py` | MODIFY — register tools router |
+| `backend/tests/test_tools.py` | CREATE |
+| `frontend/src/lib/types.ts` | MODIFY — add tool playground types |
+| `frontend/src/lib/api.ts` | MODIFY — add 3 API functions |
+| `frontend/src/lib/hooks.ts` | MODIFY — add QK + 3 hooks |
+| `frontend/src/components/servers/ToolsTab.tsx` | CREATE |
+| `frontend/src/components/servers/ToolCard.tsx` | CREATE |
+| `frontend/src/components/servers/ToolPlayground.tsx` | CREATE |
+| `frontend/src/components/servers/SchemaForm.tsx` | CREATE |
+| `frontend/src/app/servers/[id]/page.tsx` | MODIFY — add "Tools" tab |
+| `frontend/src/lib/demo-data.ts` | MODIFY — add mock tool definitions |
+| `frontend/src/lib/demo-mode.ts` | MODIFY — add route matchers |
+
+## Implementation Order
+
+1. `backend/app/utils/mcp_client.py` — shared utilities
+2. `backend/app/routers/proxy.py` — update imports
+3. `backend/app/schemas/tools.py`
+4. `backend/app/routers/tools.py`
+5. `backend/app/main.py`
+6. `backend/tests/test_tools.py`
+7. `frontend/src/lib/types.ts`
+8. `frontend/src/lib/api.ts`
+9. `frontend/src/lib/hooks.ts`
+10. `frontend/src/components/servers/SchemaForm.tsx`
+11. `frontend/src/components/servers/ToolCard.tsx`
+12. `frontend/src/components/servers/ToolPlayground.tsx`
+13. `frontend/src/components/servers/ToolsTab.tsx`
+14. `frontend/src/app/servers/[id]/page.tsx`
+15. `frontend/src/lib/demo-data.ts`
+16. `frontend/src/lib/demo-mode.ts`
