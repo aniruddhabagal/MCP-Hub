@@ -21,6 +21,7 @@ from app.routers import (
     servers,
     superadmin,
     tool_calls,
+    tools,
     websocket,
     workspaces,
 )
@@ -85,6 +86,7 @@ app.include_router(health.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)
 app.include_router(proxy.router, prefix=API_PREFIX)
 app.include_router(tool_calls.router, prefix=API_PREFIX)
+app.include_router(tools.router, prefix=API_PREFIX)
 app.include_router(alerts.router, prefix=API_PREFIX)
 app.include_router(analytics.router, prefix=API_PREFIX)
 if _WEBSOCKET_ENABLED:

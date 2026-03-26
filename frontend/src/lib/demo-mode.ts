@@ -25,6 +25,7 @@ import {
   DEMO_WORKSPACE,
   DEMO_WORKSPACE_INVITES,
   DEMO_WORKSPACE_MEMBERS,
+  getDemoToolsForServer,
 } from './demo-data'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'
@@ -110,6 +111,9 @@ export async function checkBackendHealth(): Promise<boolean> {
 
 const serverDetailRe = /^\/servers\/([^/]+)$/
 const serverProbeRe = /^\/servers\/([^/]+)\/probe$/
+const serverToolsRe = /^\/servers\/([^/]+)\/tools$/
+const serverToolsInvokeRe = /^\/servers\/([^/]+)\/tools\/invoke$/
+const serverToolsCacheRe = /^\/servers\/([^/]+)\/tools\/cache$/
 
 type Params = Record<string, string | number | undefined>
 
@@ -160,6 +164,43 @@ export function getDemoResponse(path: string, params?: Params, method = 'GET'): 
     const id = probeMatch[1]
     const result = DEMO_PROBE_RESULTS.find((r) => r.server_id === id)
     return result ?? DEMO_PROBE_RESULTS[0]
+  }
+
+  // ── Tool playground — whitelisted before mutation block ───────────────────
+  const toolsMatch = serverToolsRe.exec(path)
+  if (toolsMatch) {
+    // GET /servers/{id}/tools — return demo tool list (always, any method for cache invalidate)
+    if (m === 'GET') {
+      return getDemoToolsForServer(toolsMatch[1])
+    }
+    // DELETE /servers/{id}/tools/cache is caught below
+  }
+
+  const toolsCacheMatch = serverToolsCacheRe.exec(path)
+  if (toolsCacheMatch) {
+    // DELETE — no-op in demo mode, return undefined (204)
+    return undefined
+  }
+
+  const invokeMatch = serverToolsInvokeRe.exec(path)
+  if (invokeMatch && m === 'POST') {
+    // Return a mock success invocation result
+    return {
+      tool_name: 'demo_tool',
+      status: 'success',
+      result: {
+        content: [
+          {
+            type: 'text',
+            text: 'Demo mode — tool invocation simulated.\nIn a live environment this would call the actual MCP server.',
+          },
+        ],
+      },
+      error: null,
+      duration_ms: 142.5,
+      tool_call_id: 'demo-tc-playground-001',
+      truncated: false,
+    }
   }
 
   // ── Mutations on real entities — block ────────────────────────────────────

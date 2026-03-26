@@ -7,7 +7,6 @@ row, and streams the upstream response back unchanged.
 Auth: JWT Bearer or X-API-Key header (get_workspace_from_any_auth).
 The server must belong to the caller's workspace.
 """
-import json
 import time
 import uuid
 from datetime import datetime, timezone
@@ -21,60 +20,11 @@ from app.database import get_db
 from app.dependencies.auth import get_workspace_from_any_auth
 from app.models.server import MCPServer
 from app.models.tool_call import ToolCall
-from app.utils.mcp_client import build_auth_headers
+from app.utils.mcp_client import build_auth_headers, get_session_id, parse_sse
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
 
-_INIT_TIMEOUT = 15.0
 _PROXY_TIMEOUT = 120.0
-
-_INIT_PAYLOAD = {
-    "jsonrpc": "2.0",
-    "id": 0,
-    "method": "initialize",
-    "params": {
-        "protocolVersion": "2024-11-05",
-        "capabilities": {},
-        "clientInfo": {"name": "mcphub-proxy", "version": "1.0.0"},
-    },
-}
-
-
-def _parse_sse(raw: bytes) -> bytes:
-    try:
-        text = raw.decode("utf-8", errors="replace")
-        parts: list[str] = []
-        for line in text.splitlines():
-            if line.startswith("data:"):
-                parts.append(line[5:].strip())
-        if parts:
-            combined = "".join(parts)
-            json.loads(combined)
-            return combined.encode("utf-8")
-    except Exception:
-        pass
-    return raw
-
-
-async def _get_session_id(
-    endpoint: str,
-    extra_headers: dict[str, str] | None = None,
-) -> str | None:
-    try:
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json, text/event-stream",
-            **(extra_headers or {}),
-        }
-        async with httpx.AsyncClient(timeout=_INIT_TIMEOUT) as client:
-            resp = await client.post(
-                endpoint,
-                json=_INIT_PAYLOAD,
-                headers=headers,
-            )
-        return resp.headers.get("mcp-session-id")
-    except Exception:
-        return None
 
 
 async def _get_server_in_workspace(
@@ -150,7 +100,7 @@ async def proxy_mcp(
             **server_auth,
         }
         if method != "initialize":
-            session_id = await _get_session_id(server.endpoint, extra_headers=server_auth)
+            session_id = await get_session_id(server.endpoint, extra_headers=server_auth)
             if session_id:
                 upstream_headers["mcp-session-id"] = session_id
 
@@ -164,7 +114,7 @@ async def proxy_mcp(
         response_body = upstream.content
         content_type = upstream.headers.get("content-type", "")
         if "text/event-stream" in content_type:
-            response_body = _parse_sse(response_body)
+            response_body = parse_sse(response_body)
 
         if upstream.status_code >= 500:
             call_status = "error"
