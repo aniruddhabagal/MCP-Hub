@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(.venv/Scripts/python -m pytest tests/ -q)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "WebSearch"
     ]
   }
 }
