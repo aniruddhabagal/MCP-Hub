@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from './api'
-import type { AlertRuleUpdate, ServerCreate, ServerUpdate, ToolCallCreate } from './types'
+import type { AlertRuleUpdate, ServerCreate, ServerUpdate, ToolCallCreate, ToolInvokeRequest } from './types'
 
 // ── Query keys ────────────────────────────────────────────────────────────────
 
 export const QK = {
   servers: ['servers'] as const,
   server: (id: string) => ['servers', id] as const,
+  serverTools: (id: string) => ['servers', id, 'tools'] as const,
   healthSummary: (hours?: number) => ['health', 'summary', hours ?? 24] as const,
   healthChecks: (serverId?: string, limit?: number) =>
     ['health', 'checks', serverId, limit] as const,
@@ -193,5 +194,34 @@ export function useEvaluateAlerts() {
   return useMutation({
     mutationFn: api.evaluateAlerts,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+  })
+}
+
+// ── Tool Playground ────────────────────────────────────────────────────────────
+
+export function useServerTools(serverId: string) {
+  return useQuery({
+    queryKey: QK.serverTools(serverId),
+    queryFn: () => api.getServerTools(serverId),
+    enabled: !!serverId,
+    staleTime: 5 * 60 * 1000, // match Redis TTL
+  })
+}
+
+export function useInvokeTool() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ serverId, body }: { serverId: string; body: ToolInvokeRequest }) =>
+      api.invokeServerTool(serverId, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tool-calls'] }),
+  })
+}
+
+export function useInvalidateToolsCache() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (serverId: string) => api.invalidateToolsCache(serverId),
+    onSuccess: (_data, serverId) =>
+      qc.invalidateQueries({ queryKey: QK.serverTools(serverId) }),
   })
 }

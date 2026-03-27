@@ -29,6 +29,9 @@ import type {
   TokenResponse,
   ToolCall,
   ToolCallCreate,
+  ToolInvokeRequest,
+  ToolInvokeResponse,
+  ToolListResponse,
   TopTool,
   WorkspaceCreate,
   WorkspaceInvite,
@@ -364,3 +367,17 @@ export const getAdminAlertEvents = () =>
 
 export const getGlobalAnalytics = () =>
   apiFetch<AdminGlobalAnalytics>('/admin/analytics/global')
+
+// ── Tool Playground ───────────────────────────────────────────────────────────
+
+export const getServerTools = (serverId: string) =>
+  apiFetch<ToolListResponse>(`/servers/${serverId}/tools`)
+
+export const invokeServerTool = (serverId: string, body: ToolInvokeRequest) =>
+  apiFetch<ToolInvokeResponse>(`/servers/${serverId}/tools/invoke`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+
+export const invalidateToolsCache = (serverId: string) =>
+  apiFetch<void>(`/servers/${serverId}/tools/cache`, { method: 'DELETE' })

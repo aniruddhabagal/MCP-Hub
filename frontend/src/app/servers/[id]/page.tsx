@@ -28,7 +28,8 @@ import {
 import { HealthTimeline } from '@/components/servers/HealthTimeline'
 import { UptimeCalendar } from '@/components/servers/UptimeCalendar'
 import { RegisterServerModal } from '@/components/servers/RegisterServerModal'
-import { useServer, useHealthSummary, useToolCalls, useAlertEvents, useProbeServer } from '@/lib/hooks'
+import { ToolsTab } from '@/components/servers/ToolsTab'
+import { useServer, useHealthSummary, useToolCalls, useAlertEvents, useProbeServer, useServerTools } from '@/lib/hooks'
 import { formatLatency, formatRelativeTime, formatDateTime } from '@/lib/utils'
 
 export default function ServerDetailPage({
@@ -41,6 +42,7 @@ export default function ServerDetailPage({
   const { data: healthSummary } = useHealthSummary()
   const { data: toolCalls } = useToolCalls({ server_id: id, size: 20 })
   const { data: alertEvents } = useAlertEvents({ limit: 20 })
+  const { data: toolsData } = useServerTools(id)
   const probe = useProbeServer()
 
   if (isLoading) {
@@ -220,9 +222,20 @@ export default function ServerDetailPage({
         <UptimeCalendar serverId={id} />
       </div>
 
-      {/* Tabs: Tool Calls | Alerts */}
-      <Tabs defaultValue="tool-calls">
+      {/* Tabs: Tools | Tool Calls | Alerts */}
+      <Tabs defaultValue="tools">
         <TabsList className="bg-card border border-border h-9 p-0.5">
+          <TabsTrigger
+            value="tools"
+            className="text-xs font-mono h-8 data-[state=active]:bg-secondary"
+          >
+            Tools
+            {toolsData && toolsData.tools.length > 0 && (
+              <span className="ml-1.5 text-[10px] font-mono text-muted-foreground">
+                ({toolsData.tools.length})
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger
             value="tool-calls"
             className="text-xs font-mono h-8 data-[state=active]:bg-secondary"
@@ -239,6 +252,10 @@ export default function ServerDetailPage({
             )}
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="tools" className="mt-4">
+          <ToolsTab serverId={id} />
+        </TabsContent>
 
         <TabsContent value="tool-calls" className="mt-4">
           <div className="rounded-lg border border-border overflow-x-auto">

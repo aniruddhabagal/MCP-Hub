@@ -13,9 +13,11 @@ import type {
   HealthSummary,
   HeatmapPoint,
   LatencyStat,
+  MCPToolDefinition,
   ProbeResult,
   Server,
   ToolCall,
+  ToolListResponse,
   TopTool,
   User,
   Workspace,
@@ -574,3 +576,251 @@ export const DEMO_ADMIN_ALERT_EVENTS: AdminAlertEvent[] = DEMO_ALERT_EVENTS.map(
   fired_at: e.fired_at,
   resolved_at: e.resolved_at,
 }))
+
+// ── Tool Playground Demo Data ──────────────────────────────────────────────────
+
+export const DEMO_SERVER_TOOLS: Record<string, MCPToolDefinition[]> = {
+  'demo-srv-001': [
+    {
+      name: 'search_repositories',
+      description: 'Search GitHub repositories by query string, with optional sort and language filters.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query (e.g. "language:python stars:>1000")' },
+          sort: { type: 'string', enum: ['stars', 'forks', 'updated', 'help-wanted-issues'], description: 'Sort field' },
+          order: { type: 'string', enum: ['asc', 'desc'], description: 'Sort order', default: 'desc' },
+          limit: { type: 'integer', description: 'Maximum number of results', default: 10 },
+        },
+        required: ['query'],
+      },
+    },
+    {
+      name: 'get_pull_request',
+      description: 'Fetch details of a pull request including title, description, labels, and review status.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner (org or user)' },
+          repo: { type: 'string', description: 'Repository name' },
+          pr_number: { type: 'integer', description: 'Pull request number' },
+        },
+        required: ['owner', 'repo', 'pr_number'],
+      },
+    },
+    {
+      name: 'create_issue',
+      description: 'Create a new GitHub issue on a repository.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner' },
+          repo: { type: 'string', description: 'Repository name' },
+          title: { type: 'string', description: 'Issue title' },
+          body: { type: 'string', description: 'Issue body (markdown supported)' },
+          labels: { type: 'array', description: 'Label names to apply' },
+        },
+        required: ['owner', 'repo', 'title'],
+      },
+    },
+    {
+      name: 'list_commits',
+      description: 'List recent commits on a branch.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner' },
+          repo: { type: 'string', description: 'Repository name' },
+          branch: { type: 'string', description: 'Branch name', default: 'main' },
+          limit: { type: 'integer', description: 'Max commits to return', default: 20 },
+        },
+        required: ['owner', 'repo'],
+      },
+    },
+  ],
+  'demo-srv-002': [
+    {
+      name: 'send_message',
+      description: 'Send a message to a Slack channel or direct message thread.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channel: { type: 'string', description: 'Channel ID or name (e.g. "#general" or "C01ABC123")' },
+          text: { type: 'string', description: 'Message text (markdown supported)' },
+          thread_ts: { type: 'string', description: 'Thread timestamp to reply in thread' },
+        },
+        required: ['channel', 'text'],
+      },
+    },
+    {
+      name: 'list_channels',
+      description: 'List all public channels in the workspace.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', description: 'Max channels to return', default: 50 },
+          exclude_archived: { type: 'boolean', description: 'Skip archived channels', default: true },
+        },
+        required: [],
+      },
+    },
+    {
+      name: 'search_messages',
+      description: 'Search messages across all accessible Slack channels.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Full-text search query' },
+          limit: { type: 'integer', description: 'Max results', default: 20 },
+        },
+        required: ['query'],
+      },
+    },
+  ],
+  'demo-srv-003': [
+    {
+      name: 'search_issues',
+      description: 'Search Jira issues using JQL (Jira Query Language).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          jql: { type: 'string', description: 'JQL query string (e.g. "project = ACME AND status = Open")' },
+          fields: { type: 'string', description: 'Comma-separated list of fields to return', default: 'summary,status,assignee,priority' },
+          max_results: { type: 'integer', description: 'Max issues to return', default: 25 },
+        },
+        required: ['jql'],
+      },
+    },
+    {
+      name: 'create_ticket',
+      description: 'Create a new Jira ticket in a project.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_key: { type: 'string', description: 'Jira project key (e.g. "ACME")' },
+          summary: { type: 'string', description: 'Ticket summary / title' },
+          description: { type: 'string', description: 'Ticket description' },
+          issue_type: { type: 'string', enum: ['Bug', 'Story', 'Task', 'Epic'], description: 'Issue type', default: 'Task' },
+          priority: { type: 'string', enum: ['Highest', 'High', 'Medium', 'Low', 'Lowest'], description: 'Priority level' },
+        },
+        required: ['project_key', 'summary'],
+      },
+    },
+    {
+      name: 'get_board',
+      description: 'Get all columns and issues on a Jira board.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          board_id: { type: 'integer', description: 'Board numeric ID' },
+          sprint: { type: 'string', enum: ['active', 'backlog', 'all'], description: 'Sprint filter', default: 'active' },
+        },
+        required: ['board_id'],
+      },
+    },
+  ],
+  'demo-srv-004': [
+    {
+      name: 'search_pages',
+      description: 'Search Confluence pages across spaces.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Full-text search query' },
+          space_key: { type: 'string', description: 'Limit search to this space key' },
+          limit: { type: 'integer', description: 'Max results', default: 10 },
+        },
+        required: ['query'],
+      },
+    },
+    {
+      name: 'get_page_content',
+      description: 'Retrieve the content of a Confluence page by ID.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          page_id: { type: 'string', description: 'Confluence page ID' },
+          format: { type: 'string', enum: ['storage', 'view', 'export_view'], description: 'Content format', default: 'view' },
+        },
+        required: ['page_id'],
+      },
+    },
+  ],
+  'demo-srv-005': [
+    {
+      name: 'get_page',
+      description: 'Fetch a Notion page including its properties and content blocks.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          page_id: { type: 'string', description: 'Notion page ID (UUID or URL)' },
+        },
+        required: ['page_id'],
+      },
+    },
+    {
+      name: 'create_page',
+      description: 'Create a new Notion page inside a parent page or database.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          parent_id: { type: 'string', description: 'Parent page or database ID' },
+          title: { type: 'string', description: 'Page title' },
+          content: { type: 'string', description: 'Initial page content (plain text)' },
+        },
+        required: ['parent_id', 'title'],
+      },
+    },
+    {
+      name: 'search',
+      description: 'Search across all Notion pages and databases accessible to the integration.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          filter: { type: 'string', enum: ['page', 'database'], description: 'Filter by object type' },
+          limit: { type: 'integer', description: 'Max results', default: 10 },
+        },
+        required: ['query'],
+      },
+    },
+  ],
+  'demo-srv-006': [
+    {
+      name: 'search_issues',
+      description: 'Search Linear issues using filter criteria.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Text search query' },
+          team: { type: 'string', description: 'Team identifier to scope search' },
+          state: { type: 'string', enum: ['triage', 'backlog', 'todo', 'in_progress', 'done', 'cancelled'], description: 'Issue state filter' },
+          limit: { type: 'integer', description: 'Max results', default: 20 },
+        },
+        required: [],
+      },
+    },
+    {
+      name: 'create_issue',
+      description: 'Create a new issue on a Linear team.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          team_id: { type: 'string', description: 'Linear team ID' },
+          title: { type: 'string', description: 'Issue title' },
+          description: { type: 'string', description: 'Issue description (markdown)' },
+          priority: { type: 'integer', description: 'Priority (0=none, 1=urgent, 2=high, 3=medium, 4=low)', default: 0 },
+        },
+        required: ['team_id', 'title'],
+      },
+    },
+  ],
+}
+
+export function getDemoToolsForServer(serverId: string): ToolListResponse {
+  return {
+    tools: DEMO_SERVER_TOOLS[serverId] ?? [],
+    server_id: serverId,
+    cached: true,
+  }
+}

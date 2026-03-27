@@ -14,6 +14,7 @@ MCP went from zero to ubiquitous in under a year. Teams now run 10–20 MCP serv
 | 💓 | **Health Monitoring** | On-demand probes with latency tracking, error rates, and uptime history |
 | 🔀 | **Transparent Proxy** | Sits in front of any MCP server and logs every tool call — zero code changes required |
 | 🔐 | **Per-Server Auth** | Configure bearer token, API key header, or HTTP basic auth per server — credentials stored server-side, never exposed to clients |
+| 🧪 | **Tool Playground** | Dynamically fetch a server's tool list via `tools/list`, browse with descriptions + schemas, and invoke any tool interactively — results logged to the audit trail |
 | 📊 | **Usage Analytics** | Top tools by call count, latency histograms, error rates, volume heatmap |
 | 🚨 | **Alert System** | Threshold-based rules on error rate, latency, or availability with Slack/webhook delivery |
 | ⚡ | **Real-Time Dashboard** | WebSocket push for live server status and alert toasts |
@@ -132,7 +133,7 @@ docker-compose up
 | `/invite/[token]` | Public | Accept a workspace invitation |
 | `/dashboard` | Member+ | Stats, health overview, recent alerts, top tools |
 | `/servers` | Member+ | Server registry with health status |
-| `/servers/[id]` | Member+ | Health timeline, uptime calendar, tool calls, alerts |
+| `/servers/[id]` | Member+ | Health timeline, uptime calendar, **Tool Playground** (browse + test tools), tool calls, alerts |
 | `/tools` | Member+ | Paginated tool call audit log with filters |
 | `/analytics` | Member+ | Top tools, latency histogram, error rates, heatmap |
 | `/alerts` | Member+ | Alert rule management + event history |
@@ -205,6 +206,13 @@ All REST endpoints are under `/api/v1`. Protected endpoints require `Authorizati
 | `PATCH` | `/servers/{id}` | Update server metadata or auth configuration |
 | `DELETE` | `/servers/{id}` | Remove a server |
 | `POST` | `/servers/{id}/probe` | Probe a single server on-demand (uses configured auth) |
+
+### Tool Playground
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/servers/{id}/tools` | Member+ | Fetch the server's tool list via `tools/list` JSON-RPC — response cached in Redis for 5 min; `cached: true` flag indicates cache hit |
+| `POST` | `/servers/{id}/tools/invoke` | Admin+ | Invoke a tool via `tools/call` — arguments validated, result truncated at 1 MB, call logged to `tool_calls` with `caller_agent="mcphub-playground"` |
+| `DELETE` | `/servers/{id}/tools/cache` | Admin+ | Force-invalidate the cached tool list for a server |
 
 ### Health
 | Method | Endpoint | Description |
@@ -306,7 +314,7 @@ MCP-Hub/
 │       │   ├── workspace/       # WorkspaceGeneralSettings · MemberList · InviteForm · PendingInvites · ApiKeyManager
 │       │   ├── layout/          # Sidebar · LayoutShell · WorkspaceSwitcher · UserMenu · DemoBanner · WebSocketProvider
 │       │   ├── dashboard/       # StatsCards · HealthOverviewChart · RecentAlerts · TopToolsWidget
-│       │   ├── servers/         # ServerTable · HealthTimeline · UptimeCalendar · RegisterServerModal
+│       │   ├── servers/         # ServerTable · HealthTimeline · UptimeCalendar · RegisterServerModal · ToolsTab · ToolCard · ToolPlayground · SchemaForm
 │       │   ├── tools/           # ToolCallTable · ToolCallDetail
 │       │   ├── analytics/       # TopToolsChart · LatencyHistogram · ErrorRatesChart · UsageHeatmap
 │       │   ├── alerts/          # AlertRuleForm · AlertRulesTable · AlertHistoryTable
@@ -393,6 +401,7 @@ For full steps see **[Deployment.md](./Deployment.md)**.
 - [x] Custom JWT auth with refresh token flow
 - [x] Super admin platform dashboard with impersonation
 - [x] Per-server auth configuration (bearer token, API key header, HTTP basic)
+- [x] Tool Playground — dynamic `tools/list` discovery + interactive tool invocation with audit logging
 - [ ] MCP server auto-discovery (scan local network / Docker)
 - [ ] Token cost estimation per tool call
 - [ ] GitHub Actions integration for CI health checks

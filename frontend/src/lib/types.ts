@@ -373,3 +373,32 @@ export interface ImpersonateResponse {
   impersonated_user_id: string
   workspace_id: string
 }
+
+// ── Tool Playground ───────────────────────────────────────────────────────────
+
+export interface MCPToolDefinition {
+  name: string
+  description: string | null
+  inputSchema: Record<string, unknown> | null
+}
+
+export interface ToolListResponse {
+  tools: MCPToolDefinition[]
+  server_id: string
+  cached: boolean
+}
+
+export interface ToolInvokeRequest {
+  tool_name: string
+  arguments: Record<string, unknown>
+}
+
+export interface ToolInvokeResponse {
+  tool_name: string
+  status: 'success' | 'error'
+  result: unknown
+  error: string | null
+  duration_ms: number
+  tool_call_id: string
+  truncated: boolean
+}
