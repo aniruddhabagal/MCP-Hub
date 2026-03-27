@@ -44,6 +44,9 @@ const jsonLd = {
     "Tool call audit log and proxy interception",
     "Usage analytics and latency histograms",
     "Alert rules and event notifications",
+    "Tool Playground — live tool discovery and invocation",
+    "Multi-tenant team workspaces with role-based access",
+    "Per-server auth configuration (bearer token, API key, HTTP basic)",
   ],
 };
 

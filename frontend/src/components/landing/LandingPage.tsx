@@ -13,13 +13,20 @@ import {
   Database,
   Github,
   Globe,
+  Users,
+  Lock,
+  FlaskConical,
+  Shield,
+  Key,
+  Crown,
+  UserCheck,
 } from 'lucide-react'
 
 const agents = [
   {
     icon: Server,
     name: 'Server Registry',
-    desc: "Catalog of all MCP servers with metadata, version, and owner. One place to discover what's running.",
+    desc: 'Catalog of all MCP servers with metadata, version, owner, and per-server auth credentials.',
     color: 'text-sky-400',
     bg: 'bg-sky-400/10',
     border: 'border-sky-400/20',
@@ -56,36 +63,74 @@ const agents = [
     bg: 'bg-[hsl(var(--status-error)/0.10)]',
     border: 'border-[hsl(var(--status-error)/0.20)]',
   },
+  {
+    icon: FlaskConical,
+    name: 'Tool Playground',
+    desc: 'Dynamically discover every tool a server exposes and invoke them interactively — all logged to the audit trail.',
+    color: 'text-violet-400',
+    bg: 'bg-violet-400/10',
+    border: 'border-violet-400/20',
+  },
 ]
 
 const steps = [
   {
     number: '01',
-    title: 'Register your servers',
-    desc: 'Add MCP server endpoints to the registry. MCPHub stores metadata, ownership, and connection details.',
+    title: 'Create your workspace',
+    desc: 'Sign up and get a personal workspace instantly. Invite team members with granular roles — member, admin, or owner.',
   },
   {
     number: '02',
-    title: 'Route through the proxy',
-    desc: "Point your MCP clients to MCPHub's transparent proxy. Zero changes to your existing servers required.",
+    title: 'Register your servers',
+    desc: 'Add MCP server endpoints with metadata, ownership, and optional per-server auth (bearer token, API key, or HTTP basic).',
   },
   {
     number: '03',
-    title: 'Monitor in real-time',
-    desc: 'Watch live health status, tool call volume, and latency on the dashboard via WebSocket push.',
+    title: 'Route through the proxy',
+    desc: "Point your MCP clients to MCPHub's transparent proxy. Zero changes to existing servers. Every call is logged automatically.",
   },
   {
     number: '04',
-    title: 'Get alerted on failures',
-    desc: 'Configurable alert rules fire via Slack or webhook when servers degrade or go offline.',
+    title: 'Monitor, test, and alert',
+    desc: 'Live health status and tool call volume on the dashboard. Explore tools in the playground. Get alerted when servers degrade.',
   },
 ]
 
 const mockServers = [
-  { name: 'filesystem-mcp', status: 'healthy', latency: '2ms', calls: 1247 },
-  { name: 'github-mcp', status: 'healthy', latency: '18ms', calls: 891 },
-  { name: 'postgres-mcp', status: 'warning', latency: '124ms', calls: 432 },
-  { name: 'slack-mcp', status: 'healthy', latency: '34ms', calls: 203 },
+  { name: 'filesystem-mcp', status: 'healthy', latency: '2ms', calls: 1247, auth: false },
+  { name: 'github-mcp', status: 'healthy', latency: '18ms', calls: 891, auth: true },
+  { name: 'postgres-mcp', status: 'warning', latency: '124ms', calls: 432, auth: true },
+  { name: 'slack-mcp', status: 'healthy', latency: '34ms', calls: 203, auth: false },
+]
+
+const roles = [
+  {
+    icon: UserCheck,
+    level: 'L1',
+    name: 'Member',
+    color: 'text-sky-400',
+    bg: 'bg-sky-400/10',
+    border: 'border-sky-400/20',
+    perms: ['View dashboard & servers', 'Browse tool calls & analytics', 'Read alert history'],
+  },
+  {
+    icon: Shield,
+    level: 'L2',
+    name: 'Admin / Owner',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+    border: 'border-primary/20',
+    perms: ['Register & edit servers', 'Invoke tools in Playground', 'Manage members & invites', 'Create API keys'],
+  },
+  {
+    icon: Crown,
+    level: 'L3',
+    name: 'Super Admin',
+    color: 'text-violet-400',
+    bg: 'bg-violet-400/10',
+    border: 'border-violet-400/20',
+    perms: ['Platform-wide visibility', 'Manage all workspaces & users', 'Cross-workspace analytics', 'Impersonate users'],
+  },
 ]
 
 export function LandingPage() {
@@ -105,16 +150,11 @@ export function LandingPage() {
       const { gsap } = await import('gsap')
       const { ScrollTrigger } = await import('gsap/ScrollTrigger')
 
-      // Guard: if React strict-mode already unmounted us while we were
-      // awaiting the dynamic imports, bail out — don't create orphaned
-      // Lenis / GSAP instances.
       if (cancelled) return
 
       gsapRef = gsap
       gsap.registerPlugin(ScrollTrigger)
 
-      // autoRaf: false — GSAP's ticker drives Lenis; without this flag
-      // Lenis also runs its own RAF loop → double-update conflicts.
       lenis = new Lenis({ lerp: 0.08, smoothWheel: true, autoRaf: false })
       lenis.on('scroll', ScrollTrigger.update)
 
@@ -123,10 +163,6 @@ export function LandingPage() {
       gsap.ticker.lagSmoothing(0)
 
       ctx = gsap.context(() => {
-        // ── Hero entrance ────────────────────────────────────────
-        // set() + to() instead of from() — explicit start & end values
-        // so React strict-mode double-fire can't read a mid-animation
-        // intermediate value as the target.
         gsap.set('.hero-tag', { opacity: 0, y: 16 })
         gsap.set('.hero-word', { opacity: 0, y: 80 })
         gsap.set('.hero-desc', { opacity: 0, y: 24 })
@@ -140,7 +176,6 @@ export function LandingPage() {
           .to('.hero-cta > *', { opacity: 1, y: 0, duration: 0.6, stagger: 0.12 }, '-=0.45')
           .to('.hero-preview', { opacity: 1, y: 0, duration: 1, ease: 'power2.out' }, '-=0.7')
 
-        // ── Parallax orb ─────────────────────────────────────────
         gsap.to('.deco-orb', {
           scrollTrigger: {
             trigger: '.hero-section',
@@ -152,7 +187,6 @@ export function LandingPage() {
           ease: 'none',
         })
 
-        // ── Scroll reveals: set() + to() ─────────────────────────
         gsap.utils.toArray<HTMLElement>('.reveal-up').forEach((el) => {
           gsap.set(el, { opacity: 0, y: 50 })
           gsap.to(el, {
@@ -164,7 +198,6 @@ export function LandingPage() {
           })
         })
 
-        // ── Stagger containers ───────────────────────────────────
         gsap.utils.toArray<HTMLElement>('.reveal-stagger').forEach((el) => {
           const children = el.querySelectorAll('.stagger-child')
           gsap.set(children, { opacity: 0, y: 60 })
@@ -178,7 +211,6 @@ export function LandingPage() {
           })
         })
 
-        // ── Clip-path wipe on section labels ─────────────────────
         gsap.utils.toArray<HTMLElement>('.clip-reveal').forEach((el) => {
           gsap.set(el, { clipPath: 'inset(0 100% 0 0)' })
           gsap.to(el, {
@@ -211,13 +243,21 @@ export function LandingPage() {
           </div>
           <span className="font-serif italic text-base text-foreground tracking-tight">MCPHub</span>
         </div>
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-1.5 text-xs font-mono bg-primary text-primary-foreground px-3.5 py-2 rounded hover:bg-primary/90 transition-colors"
-        >
-          Open Dashboard
-          <ArrowRight className="w-3 h-3" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="text-xs font-mono text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/signup"
+            className="flex items-center gap-1.5 text-xs font-mono bg-primary text-primary-foreground px-3.5 py-2 rounded hover:bg-primary/90 transition-colors"
+          >
+            Get started
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
       </nav>
 
       {/* ── HERO ─────────────────────────────────────────────── */}
@@ -253,12 +293,12 @@ export function LandingPage() {
           <div className="hero-tag inline-flex items-center gap-3 mb-10">
             <span className="w-1 h-1 rounded-full bg-primary flex-shrink-0" />
             <span className="text-[10px] font-mono uppercase tracking-[0.32em] text-muted-foreground">
-              Monitor · Audit · Alert · Discover
+              Monitor · Audit · Alert · Discover · Collaborate
             </span>
             <span className="w-1 h-1 rounded-full bg-primary flex-shrink-0" />
           </div>
 
-          {/* Headline — each word wraps in overflow:hidden for masked slide-up */}
+          {/* Headline */}
           <div className="mb-2">
             <div className="overflow-hidden">
               <h1 className="font-serif italic text-[clamp(3.2rem,8.5vw,7.2rem)] leading-[0.9] tracking-tight text-foreground">
@@ -273,19 +313,20 @@ export function LandingPage() {
           </div>
 
           {/* Sub-headline */}
-          <p className="hero-desc max-w-[520px] mx-auto text-base text-muted-foreground leading-relaxed mt-7 mb-10">
+          <p className="hero-desc max-w-[540px] mx-auto text-base text-muted-foreground leading-relaxed mt-7 mb-10">
             Teams run 10–20 MCP servers with no visibility into which are slow,
             which fail silently, or which tools are called most.
-            MCPHub is the control plane they&apos;re missing.
+            MCPHub is the control plane they&apos;re missing — with multi-tenant workspaces,
+            per-server auth, and a live tool playground.
           </p>
 
           {/* CTAs */}
           <div className="hero-cta flex items-center justify-center gap-4 mb-16">
             <Link
-              href="/dashboard"
+              href="/signup"
               className="flex items-center gap-2 bg-primary text-primary-foreground text-sm font-mono px-6 py-3 rounded accent-glow hover:bg-primary/90 transition-all duration-200"
             >
-              Open Dashboard
+              Get started free
               <ArrowRight className="w-4 h-4" />
             </Link>
             <a
@@ -308,8 +349,13 @@ export function LandingPage() {
                 </div>
                 <div className="flex-1 mx-3 h-5 rounded bg-background/60 flex items-center px-3">
                   <span className="text-[9px] font-mono text-muted-foreground/50">
-                    mcphub.dev/dashboard
+                    mcphub.aniruddha.fyi/dashboard
                   </span>
+                </div>
+                {/* Workspace pill */}
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-border/60 bg-background/40">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                  <span className="text-[8px] font-mono text-muted-foreground/60">acme-engineering</span>
                 </div>
               </div>
 
@@ -336,8 +382,8 @@ export function LandingPage() {
               {/* Server table */}
               <div className="px-4 pb-4">
                 <div className="rounded-lg border border-border/50 overflow-hidden">
-                  <div className="grid grid-cols-4 gap-4 px-3 py-2 border-b border-border/40 bg-surface/40">
-                    {['Server', 'Status', 'Latency', 'Calls (24h)'].map((h) => (
+                  <div className="grid grid-cols-5 gap-4 px-3 py-2 border-b border-border/40 bg-surface/40">
+                    {['Server', 'Auth', 'Status', 'Latency', 'Calls (24h)'].map((h) => (
                       <span
                         key={h}
                         className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground"
@@ -349,11 +395,18 @@ export function LandingPage() {
                   {mockServers.map((s, i) => (
                     <div
                       key={s.name}
-                      className={`grid grid-cols-4 gap-4 px-3 py-2 text-[11px] font-mono ${
+                      className={`grid grid-cols-5 gap-4 px-3 py-2 text-[11px] font-mono ${
                         i < mockServers.length - 1 ? 'border-b border-border/30' : ''
                       }`}
                     >
                       <span className="text-foreground/75 truncate">{s.name}</span>
+                      <span className="flex items-center">
+                        {s.auth ? (
+                          <Lock className="w-2.5 h-2.5 text-primary/60" />
+                        ) : (
+                          <span className="text-muted-foreground/30">—</span>
+                        )}
+                      </span>
                       <span className="flex items-center gap-1.5">
                         <span
                           className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
@@ -390,8 +443,8 @@ export function LandingPage() {
             {[
               { value: '∞', label: 'Servers Supported', sub: 'unlimited' },
               { value: '100%', label: 'Tool Calls Captured', sub: 'via transparent proxy' },
+              { value: '3', label: 'Access Levels', sub: 'member · admin · super admin' },
               { value: '<1s', label: 'Real-time Latency', sub: 'WebSocket push' },
-              { value: '<5s', label: 'Alert Delivery', sub: 'Slack + webhook' },
             ].map((stat) => (
               <div key={stat.label} className="stagger-child">
                 <p className="text-3xl font-mono font-medium text-primary mb-1">{stat.value}</p>
@@ -459,11 +512,11 @@ export function LandingPage() {
             Agents
           </span>
           <h2 className="reveal-up font-serif italic text-[clamp(2rem,5vw,3.5rem)] leading-tight text-foreground mb-4 max-w-2xl">
-            Five agents. One control plane.
+            Six agents. One control plane.
           </h2>
           <p className="reveal-up text-base text-muted-foreground max-w-xl leading-relaxed mb-16">
             Each agent handles a specific layer of the ops stack. Together they give you complete
-            coverage of your MCP infrastructure — from discovery to alerting.
+            coverage of your MCP infrastructure — from discovery to alerting to interactive testing.
           </p>
 
           <div className="reveal-stagger grid md:grid-cols-3 gap-5">
@@ -481,12 +534,187 @@ export function LandingPage() {
                 <p className="text-sm text-muted-foreground leading-relaxed">{agent.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Placeholder to complete 3-col grid (5 agents → 6th cell) */}
-            <div className="stagger-child rounded-xl border border-dashed border-border/30 bg-card/30 p-6 flex flex-col items-center justify-center gap-2">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/30">
-                More in v0.2
-              </span>
+      {/* ── TEAM WORKSPACES ──────────────────────────────────── */}
+      <section className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <span className="clip-reveal inline-block text-[10px] font-mono uppercase tracking-[0.3em] text-primary mb-4">
+            Multi-Tenant
+          </span>
+          <h2 className="reveal-up font-serif italic text-[clamp(2rem,5vw,3.5rem)] leading-tight text-foreground mb-4 max-w-2xl">
+            Built for teams.
+          </h2>
+          <p className="reveal-up text-base text-muted-foreground max-w-xl leading-relaxed mb-16">
+            Full workspace isolation with three distinct access levels. Invite teammates, manage API keys,
+            and keep every team&apos;s data strictly scoped — all the way down to the Redis cache prefix.
+          </p>
+
+          <div className="reveal-stagger grid md:grid-cols-3 gap-5 mb-12">
+            {roles.map((role) => (
+              <div
+                key={role.name}
+                className={`stagger-child rounded-xl border ${role.border} bg-card p-6 card-glow`}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div
+                    className={`w-9 h-9 rounded-lg ${role.bg} border ${role.border} flex items-center justify-center`}
+                  >
+                    <role.icon className={`w-4 h-4 ${role.color}`} />
+                  </div>
+                  <span className={`text-[9px] font-mono uppercase tracking-widest ${role.color} opacity-60`}>
+                    {role.level}
+                  </span>
+                </div>
+                <h3 className="text-sm font-mono font-medium text-foreground mb-3">{role.name}</h3>
+                <ul className="space-y-1.5">
+                  {role.perms.map((p) => (
+                    <li key={p} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className={`w-1 h-1 rounded-full flex-shrink-0 ${role.color} opacity-60`} />
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Per-server auth callout */}
+          <div className="reveal-up rounded-xl border border-border bg-card p-6 card-glow">
+            <div className="flex items-start gap-5">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Key className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-mono font-medium text-foreground mb-2">
+                  Per-server auth configuration
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
+                  Each MCP server can be configured with its own auth credentials — bearer token, API key header,
+                  or HTTP basic auth. Credentials are masked in responses and forwarded transparently by the proxy
+                  and health prober. No changes to existing server infrastructure required.
+                </p>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {['Bearer token', 'API key header', 'HTTP basic auth'].map((method) => (
+                    <span
+                      key={method}
+                      className="text-[10px] font-mono text-primary/70 bg-primary/5 border border-primary/10 px-2.5 py-1 rounded"
+                    >
+                      {method}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TOOL PLAYGROUND ──────────────────────────────────── */}
+      <section className="py-24 px-6 bg-surface/30 border-y border-border">
+        <div className="max-w-5xl mx-auto">
+          <span className="clip-reveal inline-block text-[10px] font-mono uppercase tracking-[0.3em] text-violet-400 mb-4">
+            Tool Playground
+          </span>
+          <h2 className="reveal-up font-serif italic text-[clamp(2rem,5vw,3.5rem)] leading-tight text-foreground mb-4 max-w-2xl">
+            Discover and test every tool — live.
+          </h2>
+          <p className="reveal-up text-base text-muted-foreground max-w-xl leading-relaxed mb-16">
+            MCPHub dynamically fetches the full tool manifest from any registered server via JSON-RPC{' '}
+            <code className="text-[11px] bg-surface/60 border border-border/50 px-1.5 py-0.5 rounded font-mono">
+              tools/list
+            </code>
+            , renders each tool&apos;s JSON Schema as an interactive form, and lets admins invoke them
+            — all logged to the audit trail as{' '}
+            <code className="text-[11px] bg-surface/60 border border-border/50 px-1.5 py-0.5 rounded font-mono">
+              mcphub-playground
+            </code>.
+          </p>
+
+          <div className="reveal-stagger grid md:grid-cols-3 gap-5">
+            {[
+              {
+                icon: FlaskConical,
+                title: 'Dynamic discovery',
+                desc: 'Fetches the live tool list from any server on demand. Results are Redis-cached for 5 minutes with a manual refresh option.',
+                color: 'text-violet-400',
+                bg: 'bg-violet-400/10',
+                border: 'border-violet-400/20',
+              },
+              {
+                icon: Zap,
+                title: 'Interactive invocation',
+                desc: 'JSON Schema input fields are rendered as a form automatically. Raw JSON mode available for complex nested schemas.',
+                color: 'text-primary',
+                bg: 'bg-primary/10',
+                border: 'border-primary/20',
+              },
+              {
+                icon: Database,
+                title: 'Full audit trail',
+                desc: 'Every playground invocation is logged to tool_calls with caller_agent="mcphub-playground" — visible in the audit log immediately.',
+                color: 'text-sky-400',
+                bg: 'bg-sky-400/10',
+                border: 'border-sky-400/20',
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className={`stagger-child rounded-xl border ${item.border} bg-card p-6 card-glow transition-all duration-300 hover:-translate-y-1`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-lg ${item.bg} border ${item.border} flex items-center justify-center mb-4`}
+                >
+                  <item.icon className={`w-4 h-4 ${item.color}`} />
+                </div>
+                <h3 className="text-sm font-mono font-medium text-foreground mb-2">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Flow diagram */}
+          <div className="reveal-up mt-10 rounded-xl border border-violet-400/20 bg-card p-8 card-glow">
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-6 text-center">
+              Tool Playground request flow
+            </p>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              {[
+                { label: 'ToolsTab', sub: 'GET /servers/{id}/tools', accent: false },
+                null,
+                { label: 'MCPHub Backend', sub: 'Redis-cached 5min', accent: true, violet: true },
+                null,
+                { label: 'MCP Server', sub: 'tools/list · tools/call', accent: false },
+              ].map((node, i) =>
+                node === null ? (
+                  <div key={i} className="flex items-center gap-1 text-muted-foreground/30">
+                    <div className="w-8 h-px bg-border" />
+                    <span className="text-xs">→</span>
+                  </div>
+                ) : (
+                  <div
+                    key={node.label}
+                    className={`text-center px-5 py-3 rounded-lg border ${
+                      node.violet
+                        ? 'border-violet-400/30 bg-violet-400/10'
+                        : node.accent
+                        ? 'border-primary/30 bg-primary/10 accent-glow'
+                        : 'border-border bg-surface/50'
+                    }`}
+                  >
+                    <p
+                      className={`text-xs font-mono font-medium mb-0.5 ${
+                        node.violet ? 'text-violet-400' : node.accent ? 'text-primary' : 'text-foreground'
+                      }`}
+                    >
+                      {node.label}
+                    </p>
+                    <p className="text-[9px] font-mono text-muted-foreground">{node.sub}</p>
+                  </div>
+                )
+              )}
             </div>
           </div>
         </div>
@@ -567,6 +795,7 @@ export function LandingPage() {
                 { label: 'PostgreSQL', sub: 'audit log + analytics' },
                 { label: 'Redis', sub: 'pub/sub · streams · cache' },
                 { label: 'WebSocket', sub: 'real-time push' },
+                { label: 'JWT + API Keys', sub: 'workspace-scoped auth' },
               ].map((item) => (
                 <div key={item.label} className="text-center">
                   <p className="text-[10px] font-mono text-muted-foreground/50">{item.label}</p>
@@ -596,13 +825,21 @@ export function LandingPage() {
           <p className="text-base text-muted-foreground max-w-md mx-auto mb-10 leading-relaxed">
             The gap is wide open. Be the team with visibility before everyone else catches up.
           </p>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-mono px-8 py-4 rounded-lg accent-glow hover:bg-primary/90 transition-all duration-200"
-          >
-            Open Dashboard
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center justify-center gap-4">
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-mono px-8 py-4 rounded-lg accent-glow hover:bg-primary/90 transition-all duration-200"
+            >
+              Create free workspace
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 text-sm font-mono text-muted-foreground px-8 py-4 rounded-lg border border-border hover:border-primary/30 hover:text-foreground transition-all duration-200"
+            >
+              Sign in
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -615,7 +852,7 @@ export function LandingPage() {
               <Activity className="w-2.5 h-2.5 text-primary" />
             </div>
             <span className="font-serif italic text-sm text-foreground">MCPHub</span>
-            <span className="text-[10px] font-mono text-muted-foreground/30 ml-2">v0.1</span>
+            <span className="text-[10px] font-mono text-muted-foreground/30 ml-2">v0.2</span>
           </div>
 
           {/* Made by */}
