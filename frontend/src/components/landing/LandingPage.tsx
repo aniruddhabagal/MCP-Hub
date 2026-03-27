@@ -13,7 +13,6 @@ import {
   Database,
   Github,
   Globe,
-  Users,
   Lock,
   FlaskConical,
   Shield,

@@ -265,6 +265,14 @@ docker-compose up
 ```
 Services: `postgres:5432`, `redis:6379`, `backend:8000`, `frontend:3000`.
 
+### Pre-commit Checks
+Before every commit, run from the `frontend/` directory:
+```
+npx tsc --noEmit
+npm run lint
+```
+Both must pass with no errors before committing.
+
 ### Commit Rules
 **Make a git commit after every completed feature.** Each commit should be scoped to a single feature or logical unit of work. Commit message format:
 ```
