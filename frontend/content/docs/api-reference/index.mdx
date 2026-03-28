@@ -1,0 +1,56 @@
+---
+title: API Reference
+description: REST API overview — base URL, authentication, and available endpoint groups.
+---
+
+# API Reference
+
+MCPHub exposes a REST API under `/api/v1`. All endpoints return JSON.
+
+## Base URL
+
+```
+https://mcphub.aniruddha.fyi/api/v1
+```
+
+## Authentication
+
+All endpoints except `/auth/signup` and `/auth/login` require authentication. Two methods are supported:
+
+### JWT (Bearer token)
+
+```http
+Authorization: Bearer <access_token>
+```
+
+Obtain a token from `POST /auth/login`. Access tokens expire after 15 minutes. Use `POST /auth/refresh` with your refresh token to get a new one.
+
+### API key
+
+```http
+X-API-Key: mhk_your_key_here
+```
+
+Create API keys in **Settings → API Keys**. Keys are workspace-scoped and don't expire (until revoked).
+
+## Error format
+
+```json
+{
+  "detail": "Human-readable error message"
+}
+```
+
+Standard HTTP status codes: `400` (bad request), `401` (unauthenticated), `403` (forbidden), `404` (not found), `422` (validation error), `500` (server error).
+
+## Endpoint groups
+
+- [Auth](/docs/api-reference/auth-endpoints) — signup, login, refresh, me, workspace switching
+- [Workspaces](/docs/api-reference/workspace-endpoints) — workspace CRUD, members, invites, API keys
+- [Servers](/docs/api-reference/server-endpoints) — server registry CRUD, probe trigger
+- [Health](/docs/api-reference/health-endpoints) — health check history and summary
+- [Proxy](/docs/api-reference/proxy-endpoint) — transparent MCP proxy
+- [Tool Calls](/docs/api-reference/tool-call-endpoints) — audit log and direct ingestion
+- [Tool Playground](/docs/api-reference/playground-endpoints) — list and invoke tools
+- [Analytics](/docs/api-reference/analytics-endpoints) — usage metrics and charts
+- [Alerts](/docs/api-reference/alert-endpoints) — alert rules and events

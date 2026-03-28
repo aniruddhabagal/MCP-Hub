@@ -1,0 +1,50 @@
+---
+title: Notifications
+description: Configure Slack or webhook notifications for alert events.
+---
+
+# Notifications
+
+When an alert fires or resolves, MCPHub can send a notification to a Slack channel or any HTTP endpoint.
+
+## Slack webhook
+
+1. In your Slack workspace, create an **Incoming Webhook** app and copy the webhook URL
+2. When creating or editing an alert rule, paste the URL in the **Slack webhook URL** field
+3. MCPHub will POST a message to the channel when the alert fires or resolves
+
+Example Slack message:
+```
+🔴 FIRING — github-mcp error rate > 5%
+Current value: 12.3%  |  Window: 30 min
+MCPHub · github.com/your-org
+```
+
+## Generic HTTP webhook
+
+For PagerDuty, Opsgenie, custom alerting pipelines, or any other system:
+
+1. Enter the webhook URL in the **Webhook URL** field
+2. MCPHub will POST a JSON payload to that URL on every event
+
+Payload format:
+```json
+{
+  "event": "FIRING",
+  "rule_name": "High error rate",
+  "server_id": "uuid",
+  "server_name": "github-mcp",
+  "metric": "error_rate",
+  "threshold": 5,
+  "current_value": 12.3,
+  "fired_at": "2026-03-28T14:00:00Z"
+}
+```
+
+## No notification (dashboard only)
+
+Leave both notification fields empty to still track alert events in MCPHub without external notifications. You can still review FIRING/RESOLVED events in the alert history.
+
+## Notification delivery
+
+Notifications are fire-and-forget. If the webhook endpoint is unavailable, the delivery fails silently. The alert event is still recorded in MCPHub.

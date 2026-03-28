@@ -1,0 +1,35 @@
+---
+title: Tool Playground
+description: Discover and interactively test the tools exposed by your MCP servers directly from the MCPHub dashboard.
+---
+
+# Tool Playground
+
+The Tool Playground lets you explore and test MCP server tools without writing any code. Open a server's **Tools** tab to see all available tools and invoke them with a live form or raw JSON.
+
+## What the playground does
+
+- **Discovers tools** — calls `tools/list` on the server and shows each tool with its name, description, and input schema
+- **Generates forms** — renders an input form automatically from the JSON Schema, so you don't need to craft raw JSON for simple tools
+- **Invokes tools** — sends a `tools/call` request through the proxy and shows the result
+- **Logs invocations** — every playground invocation is logged in the audit log with `caller_agent = "mcphub-playground"`, so you can review them later
+
+## Accessing the playground
+
+1. Go to **Servers**
+2. Click any server
+3. Click the **Tools** tab (the default tab, shown first)
+
+The tool list loads and is cached for 5 minutes.
+
+## Access control
+
+- **Viewing tools** — available to all workspace members
+- **Invoking tools** — requires admin or owner role
+
+This prevents read-only members from accidentally triggering side effects through tools.
+
+## In this section
+
+- [Discovering tools](/docs/tool-playground/discovering-tools)
+- [Invoking tools](/docs/tool-playground/invoking-tools)

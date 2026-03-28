@@ -1,0 +1,64 @@
+---
+title: Analytics Endpoints
+description: Usage metrics — top tools, error rates, latency histograms, and volume heatmaps.
+---
+
+# Analytics Endpoints
+
+Base path: `/api/v1/analytics`
+
+All endpoints require L1+. Workspace-scoped. Responses cached 5 minutes.
+
+**Common query params:**
+- `server_id` — filter to a specific server (optional)
+- `days` — lookback window: `1`, `7`, or `30` (default `7`)
+
+## GET /analytics/top-tools
+
+Top tools by call volume.
+
+**Response:**
+```json
+[
+  { "tool_name": "read_file", "call_count": 1240, "error_count": 12 },
+  { "tool_name": "search_code", "call_count": 880, "error_count": 3 }
+]
+```
+
+## GET /analytics/error-rates
+
+Error rate time series, one data point per hour.
+
+**Response:**
+```json
+[
+  { "hour": "2026-03-28T13:00:00Z", "error_rate": 2.3, "call_count": 87 }
+]
+```
+
+## GET /analytics/latency
+
+p50 / p95 / p99 latency time series, one data point per hour.
+
+**Response:**
+```json
+[
+  {
+    "hour": "2026-03-28T13:00:00Z",
+    "p50_ms": 142,
+    "p95_ms": 387,
+    "p99_ms": 841
+  }
+]
+```
+
+## GET /analytics/volume
+
+Hourly call counts for the heatmap.
+
+**Response:**
+```json
+[
+  { "hour": "2026-03-28T13:00:00Z", "call_count": 87 }
+]
+```

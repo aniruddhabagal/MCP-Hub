@@ -1,0 +1,53 @@
+---
+title: Integration Overview
+description: How MCPHub integrates with your existing MCP infrastructure — and what changes (and doesn't) when you add it.
+---
+
+# Integration Overview
+
+MCPHub is designed to be dropped into an existing MCP setup with minimal friction. The core idea is **proxy-based interception**: MCPHub sits in front of your MCP servers and transparently forwards requests, logging every tool invocation as it passes through.
+
+## What changes
+
+Your **MCP clients** (Claude Desktop, custom agents, CI scripts) point at MCPHub's proxy URL instead of your server directly.
+
+```
+# Before
+https://your-mcp-server.com/mcp
+
+# After
+https://mcphub.aniruddha.fyi/api/v1/proxy/{server_id}/mcp
+```
+
+## What doesn't change
+
+- Your MCP servers run exactly as before — no changes required
+- The MCP protocol is passed through unchanged
+- Existing tool schemas, capabilities, and responses are unaffected
+- Auth between MCPHub and your server is handled transparently by MCPHub
+
+## How the proxy works
+
+```
+MCP Client → MCPHub Proxy → Your MCP Server
+               ↓
+          Logs tool call
+          Publishes to WebSocket
+          Triggers alert check
+```
+
+1. Client sends a JSON-RPC request to `/api/v1/proxy/{server_id}/mcp`
+2. MCPHub authenticates the client (JWT or API key)
+3. MCPHub fetches the server's auth credentials and forwards the request
+4. The response is proxied back to the client unchanged
+5. The tool call (name, duration, output size, caller) is logged asynchronously
+
+The total added latency is typically under 5ms.
+
+## Integration guides
+
+- [Proxy setup](/docs/integration/proxy-setup) — step-by-step for Claude Desktop, custom agents, and scripts
+- [Per-server auth](/docs/integration/per-server-auth) — configure auth for servers that require it
+- [Multiple products](/docs/integration/multiple-products) — managing servers across teams with workspaces
+- [API key access](/docs/integration/api-key-access) — programmatic access for CI/CD and scripts
+- [Direct ingestion](/docs/integration/direct-ingestion) — log tool calls without using the proxy

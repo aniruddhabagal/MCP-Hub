@@ -1,0 +1,28 @@
+---
+title: Audit Log
+description: A complete, immutable record of every tool invocation across all MCP servers in your workspace.
+---
+
+# Audit Log
+
+The audit log is a chronological record of every tool call that passed through MCPHub — via the proxy or direct ingestion. It's the ground truth for debugging, compliance, and usage investigation.
+
+## What's captured
+
+For every tool call:
+- Which tool was called and on which server
+- Which agent or caller triggered it
+- When it happened (timestamp to millisecond precision)
+- How long it took (duration in ms)
+- Whether it succeeded or failed (with error detail)
+- Input and output token counts (if provided by the caller)
+- Output payload size
+
+## Why this matters
+
+Without an audit log, debugging MCP failures means grepping server logs, asking agents what they called, and hoping someone remembers what happened. MCPHub gives you a single searchable trail across all your servers.
+
+## In this section
+
+- [Browsing and filtering](/docs/audit-log/browsing-and-filtering)
+- [Log schema](/docs/audit-log/log-schema)

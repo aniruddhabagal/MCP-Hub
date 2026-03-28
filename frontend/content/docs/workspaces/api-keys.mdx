@@ -1,0 +1,45 @@
+---
+title: API Keys
+description: Create and manage API keys for programmatic access to your workspace.
+---
+
+# API Keys
+
+API keys authenticate non-interactive access — scripts, agents, and CI/CD pipelines. They're scoped to the workspace where they were created.
+
+## Managing keys
+
+Go to **Settings → API Keys** (requires admin or owner role).
+
+### Creating a key
+
+1. Click **Create API Key**
+2. Enter a descriptive name (e.g. `staging-pipeline`, `claude-agent`)
+3. Copy the key immediately — it's shown only once
+
+Keys are prefixed with `mhk_`.
+
+### Revoking a key
+
+Click **Revoke** next to a key. Revocation is immediate and irreversible. Create a new key if you need to replace it.
+
+## Usage
+
+Pass the key in the `X-API-Key` header:
+
+```bash
+curl -X POST https://mcphub.aniruddha.fyi/api/v1/tool-calls \
+  -H "X-API-Key: mhk_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"server_id": "...", "tool_name": "...", "status": "success"}'
+```
+
+## What API keys can access
+
+- Proxy requests: `POST /api/v1/proxy/{server_id}/mcp`
+- Direct ingestion: `POST /api/v1/tool-calls`
+- Read endpoints: servers, health, analytics, tool calls, alerts
+
+API keys cannot access auth management endpoints (signup, login, workspace/member management).
+
+→ [Full API key access guide](/docs/integration/api-key-access)

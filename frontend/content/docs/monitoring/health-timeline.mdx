@@ -1,0 +1,43 @@
+---
+title: Health Timeline
+description: Visualize probe history, latency trends, and uptime with the server health timeline.
+---
+
+# Health Timeline
+
+The server detail page includes two health visualizations: the **timeline chart** and the **uptime calendar**.
+
+## Timeline chart
+
+A time-series chart of probe latency over the last 30 days, color-coded by status:
+
+- Green points — healthy responses
+- Yellow points — degraded (slow) responses
+- Red points — down or error responses
+
+Hover over any point to see the exact timestamp, latency, and error message (if any).
+
+## Uptime calendar
+
+A GitHub-style heatmap showing one square per day over the last 90 days. Color intensity indicates availability:
+
+- Dark green — 100% uptime that day
+- Light green — mostly up with some degradation
+- Red — at least one down event
+- Grey — no probes run that day
+
+This gives a quick "at a glance" view of reliability trends.
+
+## Interpreting the data
+
+A single down event doesn't necessarily mean the server was truly unreachable — it could be a transient network blip or a brief restart. Look for patterns:
+
+- Recurring downs at the same time of day → scheduled restarts or traffic spikes
+- Steadily increasing latency → resource contention on the server
+- Degraded but not down → the server is responding but slowly
+
+## Navigating to the timeline
+
+1. Go to **Servers**
+2. Click any server row
+3. The **Health** tab is shown by default with the timeline and calendar

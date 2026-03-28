@@ -1,0 +1,15 @@
+{
+  "title": "API Reference",
+  "pages": [
+    "index",
+    "auth-endpoints",
+    "workspace-endpoints",
+    "server-endpoints",
+    "health-endpoints",
+    "proxy-endpoint",
+    "tool-call-endpoints",
+    "playground-endpoints",
+    "analytics-endpoints",
+    "alert-endpoints"
+  ]
+}

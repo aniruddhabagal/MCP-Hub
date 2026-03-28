@@ -1,0 +1,60 @@
+---
+title: Invoking Tools
+description: Test MCP tools interactively using the form UI or raw JSON input.
+---
+
+# Invoking Tools
+
+## Opening the test dialog
+
+Click **Test** on any tool card. A dialog opens with two modes:
+
+- **Form** — auto-generated input form based on the tool's JSON Schema
+- **Raw JSON** — a textarea for crafting the `arguments` object manually
+
+## Form mode
+
+MCPHub generates a form from the tool's `inputSchema`. Supported field types:
+
+| Schema type | Input rendered |
+|-------------|---------------|
+| `string` | Text input |
+| `number` / `integer` | Number input |
+| `boolean` | Toggle switch |
+| `string` with `enum` | Dropdown select |
+| Complex nested types | Falls back to JSON textarea |
+
+Fill in the fields and click **Run**.
+
+## Raw JSON mode
+
+Toggle to **Raw JSON** to write the `arguments` object directly:
+
+```json
+{
+  "path": "/home/user/documents",
+  "recursive": true
+}
+```
+
+This is useful for tools with complex nested schemas, arrays, or types that don't map to simple form fields.
+
+## Results
+
+After running a tool, the result panel shows:
+
+- **Status** — success or error (with error message)
+- **Duration** — wall-clock time for the tool call (ms)
+- **Response** — the full JSON response from the server, syntax-highlighted
+- **Audit log link** — a link to the specific tool call record in the audit log
+
+## Audit trail
+
+Every invocation from the playground is logged in the tool call audit log with:
+- `caller_agent = "mcphub-playground"`
+- The actual tool name, server, and response details
+- Duration and output size
+
+This means playground tests are visible in analytics and can trigger alert rules.
+
+→ [Browsing the audit log](/docs/audit-log/browsing-and-filtering)

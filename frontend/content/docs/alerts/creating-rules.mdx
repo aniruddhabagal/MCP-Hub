@@ -1,0 +1,63 @@
+---
+title: Creating Rules
+description: Define alert rules with metrics, operators, thresholds, and time windows.
+---
+
+# Creating Rules
+
+## Creating an alert rule
+
+1. Go to **Alerts** in the sidebar
+2. Click **New Rule**
+3. Fill in the rule fields:
+   - **Name** — human-readable label for the rule
+   - **Server** — the MCP server to monitor (or "All servers")
+   - **Metric** — what to measure
+   - **Operator** — `>`, `>=`, `<`, `<=`, `==`
+   - **Threshold** — the value to compare against
+   - **Window** — the time window to evaluate over (minutes)
+4. Optionally configure a notification channel
+5. Save
+
+## Available metrics
+
+| Metric | Description |
+|--------|-------------|
+| `error_rate` | Percentage of tool calls with status = error (0–100) |
+| `avg_latency_ms` | Average tool call duration in milliseconds |
+| `p95_latency_ms` | 95th percentile latency in milliseconds |
+| `call_count` | Total tool calls in the window |
+| `server_down` | Boolean — 1 if server status is down, 0 otherwise |
+
+## Example rules
+
+**Alert when any server goes down:**
+```
+Server: All servers
+Metric: server_down
+Operator: ==
+Threshold: 1
+Window: 5 minutes
+```
+
+**Alert when error rate exceeds 5% on a specific server:**
+```
+Server: github-mcp
+Metric: error_rate
+Operator: >
+Threshold: 5
+Window: 30 minutes
+```
+
+**Alert when p95 latency exceeds 2 seconds:**
+```
+Server: All servers
+Metric: p95_latency_ms
+Operator: >
+Threshold: 2000
+Window: 15 minutes
+```
+
+## Enabling / disabling rules
+
+Toggle the active state on any rule in the list. Disabled rules are not evaluated.

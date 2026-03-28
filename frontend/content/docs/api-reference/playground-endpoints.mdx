@@ -1,0 +1,67 @@
+---
+title: Playground Endpoints
+description: Discover tools and invoke them programmatically via the Tool Playground API.
+---
+
+# Playground Endpoints
+
+Base path: `/api/v1/servers/\{id\}/tools`
+
+## GET /servers/\{id\}/tools
+
+List tools available on the specified server. Results are cached in Redis for 5 minutes.
+
+Requires L1+ (read access).
+
+**Response:**
+```json
+{
+  "server_id": "uuid",
+  "tools": [
+    {
+      "name": "read_file",
+      "description": "Read the contents of a file",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "File path to read" }
+        },
+        "required": ["path"]
+      }
+    }
+  ],
+  "cached": true,
+  "cached_at": "2026-03-28T14:00:00Z"
+}
+```
+
+## POST /servers/\{id\}/tools/invoke
+
+Invoke a tool on the specified server. Logged as a tool call with `caller_agent = "mcphub-playground"`.
+
+Requires admin or owner role.
+
+**Request:**
+```json
+{
+  "tool_name": "read_file",
+  "arguments": { "path": "/tmp/test.txt" }
+}
+```
+
+**Response:**
+```json
+{
+  "tool_call_id": "uuid",
+  "result": { ... },
+  "duration_ms": 187,
+  "status": "success",
+  "error_message": null
+}
+```
+
+## DELETE /servers/\{id\}/tools/cache
+
+Invalidate the tool list cache for this server. Forces the next `GET /tools` call to re-fetch from the server.
+
+Requires admin or owner role.

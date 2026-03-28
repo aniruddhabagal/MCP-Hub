@@ -1,0 +1,18 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "getting-started",
+    "integration",
+    "---Platform---",
+    "workspaces",
+    "monitoring",
+    "tool-playground",
+    "analytics",
+    "alerts",
+    "audit-log",
+    "---Reference---",
+    "api-reference"
+  ]
+}

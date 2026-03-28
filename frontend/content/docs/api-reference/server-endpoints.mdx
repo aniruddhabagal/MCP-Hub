@@ -1,0 +1,57 @@
+---
+title: Server Endpoints
+description: Register, update, delete, and probe MCP servers.
+---
+
+# Server Endpoints
+
+Base path: `/api/v1/servers`
+
+All endpoints are workspace-scoped. Read operations require L1+; mutations require admin+.
+
+## GET /servers
+
+List all registered servers in the current workspace.
+
+**Query params:** `status`, `tag`, `search`
+
+## POST /servers
+
+Register a new server.
+
+```json
+{
+  "name": "GitHub MCP",
+  "endpoint": "https://github-mcp.example.com/mcp",
+  "description": "GitHub integration server",
+  "tags": ["production", "github"],
+  "owner": "platform-team",
+  "auth_type": "bearer",
+  "auth_credentials": {
+    "token": "ghp_your_token"
+  }
+}
+```
+
+`auth_type` options: `null`, `"bearer"`, `"api_key"`, `"basic"`
+
+When `auth_type` is set, `auth_credentials` is required. The credential shape depends on the type:
+- `bearer`: `{ "token": "..." }`
+- `api_key`: `{ "header_name": "X-API-Key", "header_value": "..." }`
+- `basic`: `{ "username": "...", "password": "..." }`
+
+## GET /servers/\{id\}
+
+Get server details. Returns `has_credentials: bool` instead of raw credentials.
+
+## PATCH /servers/\{id\}
+
+Update server metadata or credentials. Partial update — only provided fields are changed.
+
+## DELETE /servers/\{id\}
+
+Delete server and all associated health checks, tool calls, and alert rules.
+
+## POST /servers/\{id\}/probe
+
+Trigger an on-demand health probe for a single server. Returns the probe result immediately.

@@ -1,0 +1,58 @@
+---
+title: Multiple Products & Teams
+description: Manage MCP servers across different products and teams using workspace isolation.
+---
+
+# Multiple Products & Teams
+
+MCPHub uses **workspaces** to isolate data between teams and products. Each workspace has its own server registry, tool call logs, analytics, and alert rules — data in one workspace is never visible in another.
+
+## Workspace-per-team pattern
+
+The recommended pattern for multi-team setups:
+
+```
+MCPHub Account
+├── Personal Workspace       (individual experiments)
+├── Platform Team            (shared infra MCP servers)
+├── Product A                (product-specific MCP servers)
+└── Product B                (product-specific MCP servers)
+```
+
+Each workspace has independent:
+- Server registry
+- API keys (for programmatic access)
+- Member list with roles
+- Alert rules and notification channels
+- Analytics and audit logs
+
+## Creating a workspace for a team
+
+1. Click the workspace name in the sidebar
+2. Click **New workspace**
+3. Enter the team or product name
+4. Invite teammates by email
+
+Only one org workspace per user is allowed. If you're already in an org workspace, you cannot create another — contact your workspace owner to invite you.
+
+→ [Creating workspaces](/docs/workspaces)
+
+## Roles and access
+
+| Role | Can do |
+|------|--------|
+| **Member** | View dashboard, servers, analytics, alerts |
+| **Admin** | + CRUD servers, trigger probes, manage members/invites/API keys |
+| **Owner** | + Delete workspace, change member roles |
+
+Grant admin access to team leads who need to register servers and manage alert rules. Members get read-only visibility.
+
+→ [Roles and permissions](/docs/workspaces/roles-and-permissions)
+
+## Proxy URLs are workspace-scoped
+
+A proxy URL for a server registered in **Product A's workspace** only works with:
+- A JWT token from a user in that workspace
+- An API key created in that workspace
+
+This means cross-workspace access is impossible by design — a script with Product A's API key cannot read Product B's data.

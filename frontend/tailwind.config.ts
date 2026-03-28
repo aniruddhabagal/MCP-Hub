@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss'
 import { fontFamily } from 'tailwindcss/defaultTheme'
+import { createPreset } from 'fumadocs-ui/tailwind-plugin'
 
 const config: Config = {
   darkMode: ['class'],
@@ -7,6 +8,8 @@ const config: Config = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './content/**/*.mdx',
+    './node_modules/fumadocs-ui/dist/**/*.js',
   ],
   theme: {
     extend: {
@@ -89,7 +92,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [require('tailwindcss-animate'), createPreset({ cssPrefix: 'fd-' })],
 }
 
 export default config

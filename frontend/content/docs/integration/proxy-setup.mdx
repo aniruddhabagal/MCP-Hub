@@ -1,0 +1,119 @@
+---
+title: Proxy Setup
+description: Route your MCP clients through MCPHub's transparent proxy to enable logging, monitoring, and alerting.
+---
+
+# Proxy Setup
+
+MCPHub's proxy sits between your MCP client and server. It requires zero changes on the server side — you only update the URL your client uses.
+
+## Finding your proxy URL
+
+After [registering a server](/docs/getting-started/registering-servers), open its detail page. The proxy URL is shown at the top:
+
+```
+https://mcphub.aniruddha.fyi/api/v1/proxy/{server_id}/mcp
+```
+
+The `server_id` is the UUID assigned when you registered the server.
+
+## Authentication
+
+Requests to the proxy must include one of:
+
+- **JWT** — `Authorization: Bearer <access_token>` (from login)
+- **API key** — `X-API-Key: <key>` (from workspace settings)
+
+For automated agents and CI/CD, use an API key. For interactive use, the access token works.
+
+→ [API key access](/docs/integration/api-key-access)
+
+## Claude Desktop
+
+Update your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "my-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic-ai/mcp-server-fetch",
+        "https://mcphub.aniruddha.fyi/api/v1/proxy/{server_id}/mcp"
+      ],
+      "env": {
+        "MCP_API_KEY": "mhk_your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+If the server uses a custom transport that accepts headers directly:
+
+```json
+{
+  "mcpServers": {
+    "my-server": {
+      "url": "https://mcphub.aniruddha.fyi/api/v1/proxy/{server_id}/mcp",
+      "headers": {
+        "X-API-Key": "mhk_your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+## Custom agent (Python)
+
+```python
+import httpx
+
+PROXY_URL = "https://mcphub.aniruddha.fyi/api/v1/proxy/{server_id}/mcp"
+API_KEY = "mhk_your_api_key_here"
+
+response = httpx.post(
+    PROXY_URL,
+    headers={
+        "X-API-Key": API_KEY,
+        "Content-Type": "application/json",
+    },
+    json={
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {"name": "your_tool", "arguments": {}},
+        "id": 1,
+    },
+)
+```
+
+## Custom agent (TypeScript)
+
+```typescript
+const PROXY_URL = `https://mcphub.aniruddha.fyi/api/v1/proxy/${serverId}/mcp`
+
+const response = await fetch(PROXY_URL, {
+  method: 'POST',
+  headers: {
+    'X-API-Key': process.env.MCPHUB_API_KEY!,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    jsonrpc: '2.0',
+    method: 'tools/call',
+    params: { name: 'your_tool', arguments: {} },
+    id: 1,
+  }),
+})
+```
+
+## Verifying it works
+
+After routing a request through the proxy:
+
+1. Go to **Tool Calls** in the sidebar
+2. Your tool call should appear within a few seconds
+3. Check the **Servers** page — the server status should update after the first probe
+
+If calls aren't appearing, check that your API key belongs to the same workspace as the registered server.

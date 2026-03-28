@@ -1,0 +1,34 @@
+---
+title: Alerts
+description: Configure alert rules that fire when servers go down, error rates spike, or latency climbs.
+---
+
+# Alerts
+
+MCPHub's alert system notifies you when something goes wrong with your MCP servers. You define rules with conditions and thresholds; MCPHub evaluates them against recent data and fires alerts when conditions are met.
+
+## Alert lifecycle
+
+```
+Alert rule created (active)
+       ↓
+Alert evaluator runs
+       ↓
+Condition met → Alert fires (FIRING)
+  Notification sent (Slack / webhook)
+       ↓
+Condition clears → Alert resolves (RESOLVED)
+  Resolution notification sent
+```
+
+## When alerts are evaluated
+
+Alert evaluation runs:
+- **Daily at 02:00 UTC** via Vercel Cron
+- **On demand** — click **Evaluate Alerts** on the Alerts page (admin/owner only)
+
+## In this section
+
+- [Creating rules](/docs/alerts/creating-rules)
+- [Alert events](/docs/alerts/alert-events)
+- [Notifications](/docs/alerts/notifications)

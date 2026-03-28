@@ -1,0 +1,90 @@
+---
+title: Auth Endpoints
+description: Signup, login, token refresh, workspace switching, and invite acceptance.
+---
+
+# Auth Endpoints
+
+Base path: `/api/v1/auth`
+
+## POST /auth/signup
+
+Create a new user account. A personal workspace is created automatically.
+
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "password": "minimum8chars",
+  "name": "Jane Doe",
+  "invite_token": "optional-invite-token"
+}
+```
+
+If `invite_token` is provided, the invite is accepted and the user is added to the org workspace immediately.
+
+**Response:** `TokenResponse` — access token, refresh token, and workspace info.
+
+---
+
+## POST /auth/login
+
+```json
+{
+  "email": "user@example.com",
+  "password": "yourpassword"
+}
+```
+
+**Response:** `TokenResponse`
+
+---
+
+## POST /auth/refresh
+
+Exchange a refresh token for a new access token.
+
+```json
+{
+  "refresh_token": "eyJ..."
+}
+```
+
+**Response:** `TokenResponse`
+
+---
+
+## GET /auth/me
+
+Returns the current user's profile and workspace memberships.
+
+Requires JWT auth.
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "name": "Jane Doe",
+  "is_superadmin": false,
+  "current_workspace": { "id": "...", "name": "...", "slug": "...", "role": "owner" },
+  "workspaces": [...],
+  "pending_invites": [...]
+}
+```
+
+---
+
+## POST /auth/switch-workspace
+
+Switch the active workspace. Returns new tokens scoped to the target workspace.
+
+```json
+{ "workspace_id": "uuid" }
+```
+
+---
+
+## POST /auth/accept-invite/\{token\}
+
+Accept a workspace invitation by token (from the invite email URL). Returns tokens scoped to the new workspace.
