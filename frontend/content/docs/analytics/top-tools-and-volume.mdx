@@ -1,0 +1,32 @@
+---
+title: Top Tools & Volume
+description: Understand which tools are called most and how usage is distributed across time.
+---
+
+# Top Tools & Volume
+
+## Top tools chart
+
+A bar chart ranking tools by call volume. Shows the top 10 tools in your workspace over the selected time range.
+
+Use this to:
+- Identify which tools are most load-critical (and most worth monitoring)
+- Spot unexpected tools appearing (could indicate a misconfigured agent)
+- Compare tool popularity across server versions
+
+Each bar shows the tool name and total call count. Hover for the breakdown by server.
+
+## Usage heatmap
+
+A calendar heatmap (similar to a GitHub contribution graph) showing tool call volume per hour over the selected period. Each cell is one hour; color intensity represents call count.
+
+Use this to:
+- Spot peak usage windows for capacity planning
+- Identify usage patterns (business hours vs 24/7)
+- Find periods of unexpected silence (could indicate a downstream problem)
+
+## Cost estimator
+
+Below the heatmap, a rough cost estimate based on token counts from logged tool calls. This is a best-effort calculation based on the `input_tokens` and `output_tokens` fields in tool call records.
+
+Token counts are only available for tool calls where the calling agent logged token usage (either via the proxy or direct ingestion).

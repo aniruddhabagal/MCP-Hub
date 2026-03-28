@@ -1,0 +1,38 @@
+---
+title: MCPHub Documentation
+description: The ops layer for teams running multiple MCP servers — discovery, health monitoring, audit logging, analytics, and alerting in one place.
+---
+
+# Welcome to MCPHub
+
+MCPHub is a central control plane for teams running multiple MCP (Model Context Protocol) servers. If you have MCP servers scattered across products and agents with no visibility into what's failing, what's slow, or what's being called — MCPHub is the ops layer you're missing.
+
+## What MCPHub gives you
+
+- **Server Registry** — catalog every MCP server with endpoint, owner, tags, and auth config
+- **Health Monitoring** — on-demand probes with latency tracking and uptime history
+- **Proxy-based interception** — route MCP traffic through MCPHub with zero changes to your servers
+- **Tool Call Audit Log** — every tool invocation logged with caller, duration, and output size
+- **Usage Analytics** — top tools, error rates, p95 latency, usage heatmaps
+- **Alerting** — configurable rules that fire on error spikes, high latency, or server downtime
+- **Tool Playground** — discover and invoke tools interactively from the dashboard
+- **Multi-tenant workspaces** — isolate data per team or product with role-based access
+
+## Who this is for
+
+MCPHub is built for teams that:
+
+- Run 5+ MCP servers and need a single pane of glass
+- Want an audit trail of every tool call across all agents
+- Need to know when a server is down before their agents notice
+- Are managing MCP servers across multiple products or teams
+
+## How to get started
+
+If you have existing MCP servers, the fastest path is:
+
+1. [Sign up and create a workspace](/docs/getting-started/sign-up-and-workspace)
+2. [Register your MCP server endpoints](/docs/getting-started/registering-servers)
+3. [Route your MCP clients through the proxy](/docs/integration/proxy-setup)
+
+Everything after that — monitoring, analytics, alerts — starts working automatically.

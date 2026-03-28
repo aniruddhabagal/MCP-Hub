@@ -9,7 +9,7 @@ import { useDemoMode } from '@/lib/demo-mode'
 import { useAuth } from '@/lib/auth'
 
 // Routes that don't require auth and bypass the layout shell
-const PUBLIC_ROUTES = ['/login', '/signup', '/invite']
+const PUBLIC_ROUTES = ['/login', '/signup', '/invite', '/docs']
 const isPublicRoute = (path: string) =>
   path === '/' || PUBLIC_ROUTES.some((r) => path === r || path.startsWith(r + '/'))
 

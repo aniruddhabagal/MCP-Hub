@@ -1,0 +1,52 @@
+---
+title: Discovering Tools
+description: How MCPHub fetches and displays the tools available on your MCP servers.
+---
+
+# Discovering Tools
+
+## How tool discovery works
+
+MCPHub calls `tools/list` on the server using the MCP JSON-RPC protocol:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "params": {},
+  "id": 1
+}
+```
+
+The server responds with an array of tool definitions, each containing:
+- `name` — the tool identifier
+- `description` — human-readable description
+- `inputSchema` — JSON Schema describing the tool's parameters
+
+MCPHub renders each tool as a card in the Tools tab.
+
+## Caching
+
+Tool lists are cached in Redis for **5 minutes** per server. This prevents excessive load on your MCP server from multiple dashboard users.
+
+When cached, a **Cached** badge appears in the top-right corner of the Tools tab, showing the cache age.
+
+## Refreshing the tool list
+
+Click **Refresh** in the toolbar to invalidate the cache and fetch a fresh tool list. This requires admin or owner role.
+
+Use this after:
+- Adding or removing tools from your server
+- Updating a tool's schema or description
+- Deploying a new version of your server
+
+## Search
+
+Use the search box at the top of the Tools tab to filter tools by name or description. The filter is client-side and instant.
+
+## No tools found
+
+If a server returns an empty tool list:
+- Confirm the server is running and healthy (check the Health tab)
+- Verify the server actually implements `tools/list` — not all MCP servers expose tools
+- Check the server's auth config if it returns 401 errors

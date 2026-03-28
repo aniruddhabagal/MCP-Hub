@@ -1,0 +1,36 @@
+---
+title: Monitoring
+description: Health probes, uptime timelines, and real-time dashboard updates for your MCP servers.
+---
+
+# Monitoring
+
+MCPHub monitors your MCP servers through periodic health probes and real-time WebSocket updates.
+
+## How it works
+
+1. **Health probes** — MCPHub sends a probe request (MCP `initialize` call) to each registered server
+2. The response time, HTTP status, and any errors are recorded
+3. Server status updates to `healthy`, `degraded`, or `down`
+4. The dashboard reflects current status in real time via WebSocket
+
+## Triggering probes
+
+MCPHub is deployed on Vercel's Hobby tier, which supports one background cron per day. Rather than waiting for the cron, you can trigger probes on demand from the dashboard:
+
+- **Single server** — open the server's detail page → **Probe Now**
+- **All servers** — click **Run All Probes** on the Servers page
+
+→ [Health probes](/docs/monitoring/health-probes)
+
+## Viewing history
+
+Each server has a timeline of probe results going back 30 days, plus an uptime calendar view.
+
+→ [Health timeline](/docs/monitoring/health-timeline)
+
+## Live updates
+
+The dashboard updates in real time via WebSocket — status dots change, alert toasts appear, and stats cards refresh without a page reload.
+
+→ [Real-time dashboard](/docs/monitoring/real-time-dashboard)

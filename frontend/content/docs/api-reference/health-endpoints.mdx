@@ -1,0 +1,59 @@
+---
+title: Health Endpoints
+description: Access health check history and uptime summaries for your MCP servers.
+---
+
+# Health Endpoints
+
+Base path: `/api/v1/health`
+
+All endpoints require L1+ (read access). Workspace-scoped.
+
+## GET /health/checks
+
+Paginated list of probe results across all servers (or filtered by server).
+
+**Query params:**
+- `server_id` — filter to a specific server
+- `status` — filter by probe status (`healthy`, `degraded`, `down`)
+- `limit` — page size (default 50, max 200)
+- `offset` — pagination offset
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "server_id": "uuid",
+      "status": "healthy",
+      "latency_ms": 142,
+      "error": null,
+      "checked_at": "2026-03-28T14:00:00Z"
+    }
+  ],
+  "total": 1240
+}
+```
+
+## GET /health/summary
+
+Uptime summary for each server in the workspace.
+
+**Query params:**
+- `days` — lookback window in days (default 30)
+
+**Response:**
+```json
+[
+  {
+    "server_id": "uuid",
+    "server_name": "GitHub MCP",
+    "uptime_percent": 99.2,
+    "total_checks": 120,
+    "healthy_checks": 119,
+    "avg_latency_ms": 187,
+    "last_checked_at": "2026-03-28T14:00:00Z"
+  }
+]
+```

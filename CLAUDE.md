@@ -472,26 +472,26 @@ The **Progress** section below must be updated as each feature is completed. Mar
 - [x] `lib/demo-mode.ts` — route matchers for tools list (GET), invoke (POST mock response), cache invalidation (no-op DELETE)
 
 ### Week 18 — Documentation with Fumadocs
-- [ ] Install Fumadocs packages: `fumadocs-core`, `fumadocs-mdx`, `fumadocs-ui`
-- [ ] Create `source.config.ts` at project root — Fumadocs MDX configuration
-- [ ] Modify `next.config.js` — wrap with `createMDX()` from `fumadocs-mdx/next`
-- [ ] Modify `tailwind.config.ts` — add content paths + Fumadocs preset with `cssPrefix: 'fd-'`
-- [ ] Create `lib/docs-source.ts` — docs source loader
-- [ ] Create `app/docs/docs-theme.css` — CSS variable overrides for dark theme matching
-- [ ] Create `app/docs/layout.tsx` — Fumadocs DocsLayout with sidebar tree
-- [ ] Create `app/docs/[[...slug]]/page.tsx` — catch-all MDX renderer with `generateStaticParams` and `generateMetadata`
-- [ ] Create `app/api/search/route.ts` — built-in full-text search endpoint
-- [ ] Modify `components/layout/LayoutShell.tsx` — add `/docs` to `PUBLIC_ROUTES`
-- [ ] Modify `components/landing/LandingPage.tsx` — add "Docs" link in navbar
-- [ ] Modify `components/layout/Sidebar.tsx` — add "Docs" link with BookOpen icon
-- [ ] Create content directory structure: `content/docs/` with all sidebar sections + ~40 MDX pages
-- [ ] Write `content/docs/index.mdx` — welcome/overview page
-- [ ] Write **Integration section** (core): proxy setup, per-server auth, multi-product strategy, API keys, direct ingestion
-- [ ] Write all section index.mdx files (Getting Started, Workspaces, Monitoring, Tool Playground, Analytics, Alerts, Audit Log, API Reference)
-- [ ] Write leaf pages for all sections (~26 additional pages)
-- [ ] Write root `content/docs/meta.json` and all section `meta.json` files for sidebar ordering
-- [ ] Test: TypeScript, lint, build, `/docs` accessibility without auth, sidebar navigation, search, mobile responsiveness
-- [ ] Verify: landing page "Docs" link, sidebar "Docs" link, theme matching (dark + amber), fonts (IBM Plex)
+- [x] Install Fumadocs packages: `fumadocs-core`, `fumadocs-mdx`, `fumadocs-ui`
+- [x] Create `source.config.ts` at project root — Fumadocs MDX configuration
+- [x] Modify `next.config.js` — wrap with `createMDX()` from `fumadocs-mdx/next`
+- [x] Modify `tailwind.config.ts` — add content paths + Fumadocs preset with `cssPrefix: 'fd-'`
+- [x] Create `lib/docs-source.ts` — docs source loader
+- [x] Create `app/docs/docs-theme.css` — CSS variable overrides for dark theme matching
+- [x] Create `app/docs/layout.tsx` — Fumadocs DocsLayout with sidebar tree
+- [x] Create `app/docs/[[...slug]]/page.tsx` — catch-all MDX renderer with `generateStaticParams` and `generateMetadata`
+- [x] Create `app/api/search/route.ts` — built-in full-text search endpoint
+- [x] Modify `components/layout/LayoutShell.tsx` — add `/docs` to `PUBLIC_ROUTES`
+- [x] Modify `components/landing/LandingPage.tsx` — add "Docs" link in navbar
+- [x] Modify `components/layout/Sidebar.tsx` — add "Docs" link with BookOpen icon
+- [x] Create content directory structure: `content/docs/` with all sidebar sections + ~40 MDX pages
+- [x] Write `content/docs/index.mdx` — welcome/overview page
+- [x] Write **Integration section** (core): proxy setup, per-server auth, multi-product strategy, API keys, direct ingestion
+- [x] Write all section index.mdx files (Getting Started, Workspaces, Monitoring, Tool Playground, Analytics, Alerts, Audit Log, API Reference)
+- [x] Write leaf pages for all sections (~26 additional pages)
+- [x] Write root `content/docs/meta.json` and all section `meta.json` files for sidebar ordering
+- [x] Test: TypeScript, lint, build, `/docs` accessibility without auth, sidebar navigation, search, mobile responsiveness
+- [x] Verify: landing page "Docs" link, sidebar "Docs" link, theme matching (dark + amber), fonts (IBM Plex)
 
 ---
 

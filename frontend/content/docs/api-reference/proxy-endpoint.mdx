@@ -1,0 +1,63 @@
+---
+title: Proxy Endpoint
+description: Transparent MCP proxy — forward JSON-RPC requests to upstream servers with full logging.
+---
+
+# Proxy Endpoint
+
+```
+POST /api/v1/proxy/{server_id}/mcp
+```
+
+The proxy forwards any MCP JSON-RPC request to the registered server and logs the tool call.
+
+## Authentication
+
+Accepts JWT (`Authorization: Bearer`) or API key (`X-API-Key`).
+
+## Path parameter
+
+| Parameter | Description |
+|-----------|-------------|
+| `server_id` | UUID of a server registered in your workspace |
+
+## Request body
+
+Pass any valid MCP JSON-RPC request. The proxy forwards it unchanged:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "read_file",
+    "arguments": { "path": "/tmp/data.json" }
+  },
+  "id": 1
+}
+```
+
+## Response
+
+The upstream server's response, proxied unchanged.
+
+## What the proxy logs
+
+For every `tools/call` request:
+- `tool_name` from `params.name`
+- `caller_agent` from the `X-Caller-Agent` header (optional, set by your client)
+- `duration_ms` — time from proxy receive to response
+- `status` — `success` if 2xx, `error` otherwise
+- `output_size_bytes` — response body size
+
+## Setting the caller agent
+
+To attribute tool calls to a specific agent in the audit log, add the header:
+
+```http
+X-Caller-Agent: my-agent-v2
+```
+
+## Supported MCP methods
+
+The proxy works with any MCP method (`tools/list`, `tools/call`, `resources/list`, etc.). Only `tools/call` requests generate tool call log entries.

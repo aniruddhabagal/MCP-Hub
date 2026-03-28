@@ -6,6 +6,7 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  BookOpen,
   LayoutDashboard,
   Server,
   Settings,
@@ -28,6 +29,7 @@ const coreNavItems = [
   { href: '/tools', label: 'Tool Calls', icon: Zap },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/alerts', label: 'Alerts', icon: AlertTriangle },
+  { href: '/docs', label: 'Docs', icon: BookOpen },
 ]
 
 interface SidebarProps {

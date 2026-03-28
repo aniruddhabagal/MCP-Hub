@@ -1,0 +1,47 @@
+---
+title: Browsing and Filtering
+description: Navigate the tool call audit log with filters, pagination, and the detail drawer.
+---
+
+# Browsing and Filtering
+
+## Tool Calls page
+
+Go to **Tool Calls** in the sidebar. The table shows all tool calls in your workspace, newest first, with 50 rows per page.
+
+## Columns
+
+| Column | Description |
+|--------|-------------|
+| Tool name | The MCP tool that was called |
+| Server | Which MCP server handled the call |
+| Caller | The agent or system that made the call |
+| Status | Success or error |
+| Duration | Wall-clock time (ms) |
+| Time | When the call happened |
+
+## Filters
+
+Use the filter bar at the top to narrow results:
+
+- **Server** — filter to a specific MCP server
+- **Status** — show only successes, only errors, or both
+- **Caller** — filter by caller agent name
+- **Date range** — custom start/end timestamps
+- **Tool name** — search by tool name (partial match)
+
+Filters are combined with AND logic.
+
+## Detail drawer
+
+Click any row to open a detail drawer showing the full tool call record:
+- All fields including raw error message
+- A link to the server's detail page
+- A link to the specific tool in the Tool Playground
+- JSON preview of input/output metadata
+
+## Exporting
+
+The audit log is queryable via the API for bulk export. Use `GET /api/v1/tool-calls` with filter params and paginate through results.
+
+→ [Tool call API endpoint](/docs/api-reference/tool-call-endpoints)

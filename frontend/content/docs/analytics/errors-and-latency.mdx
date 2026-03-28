@@ -1,0 +1,35 @@
+---
+title: Errors & Latency
+description: Monitor error rates and latency trends across your MCP servers.
+---
+
+# Errors & Latency
+
+## Error rate chart
+
+A time-series line chart showing the percentage of tool calls that returned an error, plotted over time.
+
+A tool call is counted as an error when:
+- The `status` field is `"error"` in the tool call record
+- The proxy received a non-2xx response from the upstream server
+- The proxy hit a timeout or connection error
+
+**What to watch for:**
+- Sudden spikes → server deployment or config change broke something
+- Steady baseline above 0% → persistent issue worth investigating
+- Error rate correlating with high latency → the server is overloaded
+
+## Latency histogram
+
+A histogram of tool call durations (ms) over the selected time window. Shows the distribution of response times, with p50, p95, and p99 percentile markers.
+
+**Interpreting the histogram:**
+- Bimodal distribution → two classes of tool calls (fast vs slow)
+- Long tail to the right → occasional very slow calls; may indicate timeouts or large payloads
+- p95 creeping up over time → gradual performance regression
+
+## Per-server breakdown
+
+Both charts support filtering by server using the server selector. Use this to:
+- Isolate whether an error spike is coming from one server or all servers
+- Compare latency profiles across server versions or environments

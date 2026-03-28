@@ -1,0 +1,81 @@
+---
+title: Alert Endpoints
+description: Manage alert rules and browse alert event history.
+---
+
+# Alert Endpoints
+
+## Alert Rules
+
+Base path: `/api/v1/alerts/rules`
+
+Read requires L1+. Mutations require admin+.
+
+### GET /alerts/rules
+
+List all alert rules in the workspace.
+
+### POST /alerts/rules
+
+Create an alert rule.
+
+```json
+{
+  "name": "High error rate",
+  "server_id": "uuid or null for all servers",
+  "metric": "error_rate",
+  "operator": ">",
+  "threshold": 5.0,
+  "window_minutes": 30,
+  "slack_webhook_url": "https://hooks.slack.com/...",
+  "webhook_url": null
+}
+```
+
+**Metric options:** `error_rate`, `avg_latency_ms`, `p95_latency_ms`, `call_count`, `server_down`
+
+**Operator options:** `>`, `>=`, `<`, `<=`, `==`
+
+### PATCH /alerts/rules/\{id\}
+
+Update a rule. Partial update supported.
+
+### DELETE /alerts/rules/\{id\}
+
+Delete an alert rule.
+
+---
+
+## Alert Events
+
+Base path: `/api/v1/alerts/events`
+
+### GET /alerts/events
+
+Paginated list of alert events (FIRING / RESOLVED), newest first.
+
+**Query params:**
+- `rule_id` — filter by rule
+- `server_id` — filter by server
+- `event_type` — `FIRING` or `RESOLVED`
+- `limit` / `offset` — pagination
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "rule_id": "uuid",
+      "rule_name": "High error rate",
+      "server_id": "uuid",
+      "server_name": "GitHub MCP",
+      "event_type": "FIRING",
+      "metric_value": 12.3,
+      "fired_at": "2026-03-28T14:00:00Z",
+      "resolved_at": null
+    }
+  ],
+  "total": 47
+}
+```

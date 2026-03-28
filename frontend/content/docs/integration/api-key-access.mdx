@@ -1,0 +1,55 @@
+---
+title: API Key Access
+description: Create and use API keys for programmatic access to MCPHub — CI/CD pipelines, scripts, and external agents.
+---
+
+# API Key Access
+
+API keys let automated systems authenticate with MCPHub without a user session. Use them for:
+- Routing MCP requests through the proxy from CI/CD pipelines
+- Scripts that directly ingest tool call data
+- External agents that don't have a user login flow
+
+## Creating an API key
+
+1. Go to **Settings → API Keys** (requires admin or owner role)
+2. Click **Create API Key**
+3. Give it a descriptive name (e.g. `ci-pipeline`, `agent-prod`)
+4. Copy the key immediately — it's only shown once
+
+Keys are prefixed with `mhk_` so they're easy to identify in logs and configs.
+
+## Using an API key
+
+Include the key in the `X-API-Key` request header:
+
+```http
+POST /api/v1/proxy/{server_id}/mcp HTTP/1.1
+X-API-Key: mhk_your_key_here
+Content-Type: application/json
+```
+
+API keys work for:
+- Proxy requests (`/api/v1/proxy/*`)
+- Direct tool call ingestion (`POST /api/v1/tool-calls`)
+- Read endpoints (server list, health, analytics)
+
+API keys **cannot** be used for auth management endpoints (signup, login, workspace settings).
+
+## Revoking a key
+
+1. Go to **Settings → API Keys**
+2. Click **Revoke** next to the key
+
+Revoked keys stop working immediately. There's no way to restore a revoked key — create a new one if needed.
+
+## Key scope
+
+API keys are scoped to the workspace where they were created. A key from Workspace A cannot access Workspace B's data or servers.
+
+## Best practices
+
+- Create separate keys per service (one for CI, one for each agent)
+- Store keys in environment variables or a secrets manager, never in code
+- Rotate keys periodically — revoke and recreate
+- Use descriptive names so you can identify which service owns which key
