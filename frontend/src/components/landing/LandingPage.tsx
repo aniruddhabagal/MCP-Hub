@@ -232,15 +232,17 @@ export function LandingPage() {
   }, [])
 
   return (
-    <div ref={containerRef} className="bg-background text-foreground overflow-x-hidden">
+   <div ref={containerRef} className="bg-background text-foreground overflow-x-hidden">
       {/* ── NAV ───────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-8 border-b border-border/50 bg-background/80 backdrop-blur-md">
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded border border-primary/40 bg-primary/10 flex items-center justify-center">
-            <Activity className="w-3 h-3 text-primary" />
+        <Link href="/">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded border border-primary/40 bg-primary/10 flex items-center justify-center">
+              <Activity className="w-3 h-3 text-primary" />
+            </div>
+            <span className="font-serif italic text-base text-foreground tracking-tight">MCPHub</span>
           </div>
-          <span className="font-serif italic text-base text-foreground tracking-tight">MCPHub</span>
-        </div>
+        </Link>
         <div className="flex items-center gap-3">
           <Link
             href="/docs"
