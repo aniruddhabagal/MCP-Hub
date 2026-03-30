@@ -1,4 +1,4 @@
 {
   "title": "Alerts",
-  "pages": ["index", "creating-rules", "alert-events", "notifications"]
+  "pages": ["creating-rules", "alert-events", "notifications"]
 }

@@ -1,4 +1,4 @@
 {
   "title": "Audit Log",
-  "pages": ["index", "browsing-and-filtering", "log-schema"]
+  "pages": ["browsing-and-filtering", "log-schema"]
 }

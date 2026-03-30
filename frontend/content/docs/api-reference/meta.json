@@ -1,7 +1,6 @@
 {
   "title": "API Reference",
   "pages": [
-    "index",
     "auth-endpoints",
     "workspace-endpoints",
     "server-endpoints",

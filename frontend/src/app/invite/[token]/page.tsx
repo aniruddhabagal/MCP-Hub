@@ -24,18 +24,20 @@ export default function InvitePage() {
     if (!isAuthenticated) return  // Wait — user needs to log in first
     if (state !== 'idle') return
 
+    let timeoutId: ReturnType<typeof setTimeout>
     const accept = async () => {
       setState('loading')
       try {
         await acceptInvite(token)
         setState('success')
-        setTimeout(() => router.push('/dashboard'), 2000)
+        timeoutId = setTimeout(() => router.push('/dashboard'), 2000)
       } catch (err) {
         setState('error')
         setErrorMsg(err instanceof Error ? err.message : 'Failed to accept invitation')
       }
     }
     accept()
+    return () => clearTimeout(timeoutId)
   }, [isAuthenticated, isLoading, token, state, router, acceptInvite])
 
   return (

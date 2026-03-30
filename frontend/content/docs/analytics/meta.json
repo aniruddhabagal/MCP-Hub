@@ -1,4 +1,4 @@
 {
   "title": "Analytics",
-  "pages": ["index", "top-tools-and-volume", "errors-and-latency", "how-aggregation-works"]
+  "pages": ["top-tools-and-volume", "errors-and-latency", "how-aggregation-works"]
 }

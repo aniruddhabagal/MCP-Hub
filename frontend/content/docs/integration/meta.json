@@ -1,4 +1,4 @@
 {
   "title": "Integration",
-  "pages": ["index", "proxy-setup", "per-server-auth", "multiple-products", "api-key-access", "direct-ingestion"]
+  "pages": ["proxy-setup", "per-server-auth", "multiple-products", "api-key-access", "direct-ingestion"]
 }

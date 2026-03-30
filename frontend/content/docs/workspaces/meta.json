@@ -1,4 +1,4 @@
 {
   "title": "Workspaces",
-  "pages": ["index", "personal-vs-org", "roles-and-permissions", "inviting-members", "api-keys"]
+  "pages": ["personal-vs-org", "roles-and-permissions", "inviting-members", "api-keys"]
 }
