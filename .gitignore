@@ -47,6 +47,7 @@ yarn-error.log*
 # Build outputs
 frontend/.next/
 frontend/out/
+frontend/.source/
 
 # IDE
 .vscode/
