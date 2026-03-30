@@ -120,6 +120,15 @@ const roles = [
     border: 'border-primary/20',
     perms: ['Register & edit servers', 'Invoke tools in Playground', 'Manage members & invites', 'Create API keys'],
   },
+  {
+    icon: Key,
+    level: 'API',
+    name: 'API Access',
+    color: 'text-amber-400',
+    bg: 'bg-amber-400/10',
+    border: 'border-amber-400/20',
+    perms: ['Workspace-scoped API keys', 'Bearer token or X-API-Key header', 'Same permissions as issuing role', 'Revocable at any time'],
+  },
 ]
 
 export function LandingPage() {
