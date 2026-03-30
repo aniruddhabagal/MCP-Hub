@@ -1,0 +1,34 @@
+---
+title: Analytics
+description: Usage insights across all your MCP servers — top tools, error rates, latency, and volume heatmaps.
+---
+
+# Analytics
+
+The Analytics page gives you a usage overview for all MCP servers in your workspace. All charts are scoped to your workspace and updated from pre-aggregated snapshots for performance.
+
+## What's tracked
+
+- **Top tools** — which tool names are called most, by volume
+- **Volume over time** — call counts per hour as a heatmap
+- **Error rates** — percentage of tool calls that failed, per server or globally
+- **Latency** — p95 response time histogram, per server or globally
+
+## Data freshness
+
+Analytics are pre-aggregated into hourly snapshots and cached in Redis with a 5-minute TTL. This means:
+- Analytics data can be up to 5 minutes behind real-time
+- Very recent tool calls (last few minutes) may not appear in charts
+- Historical data going back up to 30 days is available
+
+## Filters
+
+All analytics charts support filtering by:
+- **Time range** — last 24h, 7 days, 30 days
+- **Server** — focus on a specific MCP server
+
+## In this section
+
+- [Top tools and volume](/docs/analytics/top-tools-and-volume)
+- [Errors and latency](/docs/analytics/errors-and-latency)
+- [How aggregation works](/docs/analytics/how-aggregation-works)

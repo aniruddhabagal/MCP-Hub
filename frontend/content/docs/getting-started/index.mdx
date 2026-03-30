@@ -1,0 +1,43 @@
+---
+title: Quick Start
+description: Get MCPHub connected to your existing MCP servers in under 5 minutes.
+---
+
+# Quick Start
+
+MCPHub connects to your existing MCP servers — you don't change anything on the server side. The integration is entirely on the client side: instead of pointing your agents directly at `https://your-mcp-server.com/mcp`, you point them at MCPHub's proxy.
+
+## Steps
+
+### 1. Sign up and create a workspace
+
+[Create your account](/signup). A personal workspace is created automatically. If you're setting this up for a team, you can create an org workspace and invite members.
+
+→ [Sign up and workspace setup](/docs/getting-started/sign-up-and-workspace)
+
+### 2. Register your MCP servers
+
+Add each MCP server to your workspace's registry. You'll provide the endpoint URL, a display name, and optionally auth credentials if your server requires authentication.
+
+→ [Registering servers](/docs/getting-started/registering-servers)
+
+### 3. Route traffic through the proxy
+
+Update your MCP client config to use MCPHub's proxy URL instead of the direct server endpoint. This is the only config change required.
+
+```
+Before: https://your-mcp-server.com/mcp
+After:  https://mcphub.aniruddha.fyi/api/v1/proxy/{server_id}/mcp
+```
+
+→ [Proxy setup guide](/docs/integration/proxy-setup)
+
+### 4. Monitor, test, and alert
+
+Once traffic flows through the proxy, you'll see tool calls in the audit log, health status in the dashboard, and usage in analytics. Set up alert rules to be notified when something goes wrong.
+
+## What's next
+
+- [Integration overview](/docs/integration) — understand the proxy architecture
+- [Workspaces](/docs/workspaces) — team access and roles
+- [Tool Playground](/docs/tool-playground) — discover and test tools interactively

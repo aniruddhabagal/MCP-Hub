@@ -1,0 +1,49 @@
+---
+title: Per-Server Auth
+description: Configure authentication for MCP servers that require credentials — bearer tokens, API keys, or HTTP Basic.
+---
+
+# Per-Server Auth
+
+If your MCP server requires authentication to accept requests, MCPHub handles it transparently. You configure the credentials once in the server registry, and the proxy forwards them automatically on every request — your MCP clients don't need to know about the upstream auth.
+
+## Supported auth types
+
+| Type | Header sent to your server |
+|------|---------------------------|
+| **Bearer token** | `Authorization: Bearer <token>` |
+| **API key header** | `<custom-header-name>: <value>` |
+| **HTTP Basic** | `Authorization: Basic <base64(user:pass)>` |
+
+## Configuring auth
+
+When registering or editing a server, expand the **Auth Configuration** section:
+
+1. Select an auth type from the dropdown
+2. Fill in the required fields:
+   - **Bearer** — paste the token
+   - **API key header** — enter the header name (e.g. `X-API-Key`) and the key value
+   - **HTTP Basic** — enter the username and password
+3. Save the server
+
+## Security model
+
+- Credentials are stored encrypted in the database
+- The UI only shows a lock icon indicating auth is configured — raw credentials are never exposed
+- Credentials are only decrypted in-memory by the proxy at request time
+- Health probes also use the configured credentials when probing
+
+## Rotating credentials
+
+To update credentials:
+
+1. Open the server's detail page
+2. Click **Edit**
+3. Update the credential fields
+4. Save
+
+The new credentials take effect immediately on the next proxied request or probe.
+
+## No-auth servers
+
+If your MCP server accepts unauthenticated requests, leave the auth type as **None**. This is common for locally-hosted servers or servers running inside a private network.

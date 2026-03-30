@@ -1,0 +1,47 @@
+---
+title: Registering Servers
+description: Add your existing MCP server endpoints to the MCPHub registry.
+---
+
+# Registering Servers
+
+The server registry is MCPHub's catalog of all your MCP servers. Each registered server gets a unique ID used in proxy URLs, health probes, and tool calls.
+
+## Adding a server
+
+1. Go to **Servers** in the sidebar
+2. Click **Register Server**
+3. Fill in the details:
+   - **Name** — display name (e.g. "GitHub MCP", "Filesystem MCP")
+   - **Endpoint** — the full URL to your MCP server (e.g. `https://your-server.com/mcp`)
+   - **Description** — optional, shown in the registry
+   - **Tags** — optional labels for filtering (e.g. `production`, `internal`)
+   - **Owner** — the team or person responsible for this server
+   - **Auth** — if your server requires authentication, configure it here
+
+## Server auth configuration
+
+If your MCP server requires authentication, select an auth type:
+
+| Type | Use when |
+|------|----------|
+| **Bearer token** | Server expects `Authorization: Bearer <token>` |
+| **API key header** | Server expects a custom header like `X-API-Key: <key>` |
+| **HTTP Basic** | Server expects HTTP Basic Auth |
+
+Credentials are stored encrypted and never exposed in the UI. The proxy forwards them to your server automatically.
+
+→ [Per-server auth configuration](/docs/integration/per-server-auth)
+
+## Server states
+
+After registration, a server starts in `unknown` status. Trigger a health probe to get the first status reading:
+
+- Click the server row → **Probe Now**
+- Or click **Run All Probes** on the Servers page
+
+→ [Health probes](/docs/monitoring/health-probes)
+
+## Editing or removing a server
+
+Click a server in the table to open its detail page. Admins and owners can edit metadata or remove the server. Removing a server deletes its health history and tool call records.

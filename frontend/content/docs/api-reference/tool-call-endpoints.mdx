@@ -1,0 +1,69 @@
+---
+title: Tool Call Endpoints
+description: Paginated audit log and direct ingestion for tool call records.
+---
+
+# Tool Call Endpoints
+
+Base path: `/api/v1/tool-calls`
+
+## GET /tool-calls
+
+Paginated list of tool calls in the current workspace, newest first.
+
+**Query params:**
+- `server_id` — filter by server
+- `tool_name` — partial match on tool name
+- `caller_agent` — filter by caller
+- `status` — `success` or `error`
+- `start` / `end` — ISO 8601 timestamps for date range
+- `limit` — page size (default 50, max 200)
+- `offset` — pagination offset
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "server_id": "uuid",
+      "server_name": "GitHub MCP",
+      "tool_name": "search_code",
+      "caller_agent": "claude-desktop",
+      "status": "success",
+      "duration_ms": 312,
+      "input_tokens": 120,
+      "output_tokens": 450,
+      "output_size_bytes": 3200,
+      "error_message": null,
+      "created_at": "2026-03-28T14:23:00Z"
+    }
+  ],
+  "total": 4812
+}
+```
+
+## POST /tool-calls
+
+Direct ingestion — log a tool call without using the proxy.
+
+Requires JWT or API key auth.
+
+**Request:**
+```json
+{
+  "server_id": "uuid",
+  "tool_name": "read_file",
+  "caller_agent": "my-agent",
+  "status": "success",
+  "duration_ms": 245,
+  "input_tokens": 80,
+  "output_tokens": 210,
+  "output_size_bytes": 1380,
+  "error_message": null
+}
+```
+
+Only `server_id`, `tool_name`, and `status` are required.
+
+→ [Direct ingestion guide](/docs/integration/direct-ingestion)

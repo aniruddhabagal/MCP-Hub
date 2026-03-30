@@ -1,0 +1,4 @@
+{
+  "title": "Monitoring",
+  "pages": ["index", "health-probes", "health-timeline", "real-time-dashboard"]
+}

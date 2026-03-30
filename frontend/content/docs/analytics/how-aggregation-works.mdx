@@ -1,0 +1,52 @@
+---
+title: How Aggregation Works
+description: Understand the analytics pipeline — hourly snapshots, daily cron, and Redis caching.
+---
+
+# How Aggregation Works
+
+MCPHub pre-aggregates analytics data into hourly snapshots to keep dashboard queries fast, even with millions of raw tool call records.
+
+## The aggregation pipeline
+
+```
+tool_calls (raw)
+       ↓
+analytics_aggregator agent
+       ↓
+analytics_snapshots (hourly, per-server)
+       ↓
+Redis cache (5 min TTL)
+       ↓
+Analytics API → Dashboard
+```
+
+## Hourly snapshots
+
+The `analytics_snapshots` table stores one row per server per hour, containing:
+- `call_count` — total tool calls in that hour
+- `error_count` — tool calls with status = error
+- `avg_latency_ms` — mean duration
+- `p95_latency_ms` — 95th percentile duration
+- Top 10 tools and their call counts
+
+This means analytics queries are aggregation over at most ~720 rows (30 days × 24 hours) per server, rather than scanning millions of raw tool call rows.
+
+## When aggregation runs
+
+The analytics aggregator runs:
+- **Daily at 02:00 UTC** via Vercel Cron — processes the last 24 hours of tool calls for all workspaces
+- **On-demand** via `POST /api/v1/admin/evaluate-alerts` (super admin only)
+
+This means analytics data is at most ~24 hours behind for the current day. Yesterday's data is fully aggregated.
+
+## Redis cache
+
+Analytics API responses are cached in Redis with a 5-minute TTL. This means:
+- Repeated dashboard loads hit the cache, not the database
+- Cache is scoped per workspace and per query parameters
+- You may see data up to 5 minutes old during peak usage
+
+## Raw data access
+
+For real-time or fine-grained analysis, use the [tool call audit log](/docs/audit-log) directly. It contains every individual tool call with full detail.

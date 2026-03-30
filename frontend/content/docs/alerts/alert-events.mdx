@@ -1,0 +1,39 @@
+---
+title: Alert Events
+description: View the history of fired and resolved alerts across your workspace.
+---
+
+# Alert Events
+
+Every time an alert rule transitions between FIRING and RESOLVED, MCPHub records an event. The **Alerts** page shows the full event history.
+
+## Event types
+
+| Type | Meaning |
+|------|---------|
+| `FIRING` | The alert condition was met during evaluation |
+| `RESOLVED` | The condition was no longer met in the following evaluation |
+
+## Viewing events
+
+The **Alert History** table on the Alerts page shows:
+- Alert rule name
+- Server (if rule is server-scoped)
+- Event type (FIRING / RESOLVED)
+- Timestamp
+- The metric value that triggered the event
+
+Filter by server or time range to narrow down.
+
+## Notification history
+
+When an alert fires, a notification is sent (if configured). The event record includes whether the notification was delivered successfully.
+
+→ [Notifications](/docs/alerts/notifications)
+
+## Alert vs event
+
+- An **alert rule** is the condition definition — it persists until deleted
+- An **alert event** is a historical record of when the condition was met or cleared
+
+One alert rule can generate many events over its lifetime (fires and resolves as conditions change).

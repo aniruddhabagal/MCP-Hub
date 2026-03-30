@@ -1,417 +1,125 @@
 # MCPHub
 
-> **Grafana for your MCP layer.** The central ops dashboard that teams running multiple MCP servers are missing.
+> The ops layer your MCP infrastructure is missing.
 
-MCP went from zero to ubiquitous in under a year. Teams now run 10–20 MCP servers with **zero visibility** into which are slow, which fail silently, or which tools are called most. MCPHub is the missing management layer — a single pane of glass for discovery, health monitoring, auditing, analytics, and alerting across your entire MCP infrastructure — with full multi-tenant team workspace support.
+MCPHub is a central control plane for teams running multiple MCP servers — think Grafana for your MCP layer. Register servers, monitor health, audit every tool call, visualize usage analytics, set threshold-based alerts, and test tools interactively — all in one place, with full multi-tenant team support.
 
-<br/>
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688)](https://fastapi.tiangolo.com)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB)](https://python.org)
+
+---
+
+## Why MCPHub?
+
+MCP went from zero to ubiquitous in under a year. Teams now run 10–20 MCP servers with no visibility into which are slow, which fail silently, or which tools are called most. There's no central control plane — no equivalent of Grafana, no alerting, no audit trail. Management is entirely ad hoc.
+
+MCPHub solves this with a single pane of glass across your entire MCP fleet.
+
+---
 
 ## Features
 
-| | Feature | Description |
-|---|---|---|
-| 📋 | **Server Registry** | Catalog all MCP servers with metadata, version, owner, and tags |
-| 💓 | **Health Monitoring** | On-demand probes with latency tracking, error rates, and uptime history |
-| 🔀 | **Transparent Proxy** | Sits in front of any MCP server and logs every tool call — zero code changes required |
-| 🔐 | **Per-Server Auth** | Configure bearer token, API key header, or HTTP basic auth per server — credentials stored server-side, never exposed to clients |
-| 🧪 | **Tool Playground** | Dynamically fetch a server's tool list via `tools/list`, browse with descriptions + schemas, and invoke any tool interactively — results logged to the audit trail |
-| 📊 | **Usage Analytics** | Top tools by call count, latency histograms, error rates, volume heatmap |
-| 🚨 | **Alert System** | Threshold-based rules on error rate, latency, or availability with Slack/webhook delivery |
-| ⚡ | **Real-Time Dashboard** | WebSocket push for live server status and alert toasts |
-| 🏢 | **Team Workspaces** | Multi-tenant with owner/admin/member roles — invite teammates, manage API keys |
-| 🛡️ | **Super Admin** | Platform-wide visibility across all workspaces, users, and servers with impersonation |
-| 🔑 | **Custom JWT Auth** | Access + refresh token flow, API key auth, no third-party auth services |
-| 🎭 | **Demo Mode** | Full offline demo with realistic mock data — no backend required |
+- **Server Registry** — Catalog MCP servers with metadata, version, owner tags, and optional per-server auth (bearer token, API key, or HTTP basic)
+- **Health Monitoring** — On-demand probes with latency tracking, error rate history, and uptime calendars
+- **Transparent Proxy** — Route MCP clients through MCPHub's proxy endpoint. Every tool call is intercepted and logged — zero changes to existing servers
+- **Tool Playground** — Dynamically fetch a server's tool list, browse schemas, and invoke any tool interactively. Results are logged to the audit trail
+- **Usage Analytics** — Top tools by call count, latency histograms, error rates, volume heatmap
+- **Alert System** — Threshold-based rules on latency, error rate, or availability with Slack and webhook delivery
+- **Real-Time Dashboard** — WebSocket push for live server status dots and alert toasts
+- **Multi-Tenant Workspaces** — Owner / admin / member roles, email invitations, API keys, workspace switcher
+- **Super Admin** — Platform-wide visibility across all workspaces and users, with impersonation
+- **Demo Mode** — Full offline experience on rich mock data — no backend required
 
-<br/>
+---
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                           Browser                               │
-│   Next.js 14 · TanStack Query · Recharts · shadcn/ui            │
-│   AuthProvider · WorkspaceSwitcher · GSAP + Lenis               │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │  REST + WebSocket (?token=<jwt>)
-┌──────────────────────────▼──────────────────────────────────────┐
-│             FastAPI  (Vercel Serverless Functions)               │
-│                                                                 │
-│  /api/v1/auth          /api/v1/workspaces   /api/v1/servers     │
-│  /api/v1/tool-calls    /api/v1/analytics    /api/v1/alerts      │
-│  /api/v1/health        /api/v1/proxy        /api/v1/admin       │
-│  /ws/dashboard  (WebSocket — workspace-scoped pub/sub)          │
-└──────────────┬──────────────────────────┬───────────────────────┘
-               │                          │
-  ┌────────────▼────────┐    ┌────────────▼────────┐
-  │  PostgreSQL (Neon)  │    │   Redis (Upstash)   │
-  │                     │    │                     │
-  │  users              │    │  • 5-min cache TTL  │
-  │  workspaces         │    │  • Workspace-scoped │
-  │  workspace_members  │    │    pub/sub channels │
-  │  workspace_invites  │    │  • WS fan-out       │
-  │  api_keys           │    └─────────────────────┘
-  │  mcp_servers        │
-  │  health_checks      │
-  │  tool_calls         │
-  │  alert_rules        │
-  │  alert_events       │
-  │  analytics_snaps    │
-  └─────────────────────┘
-```
-
-<br/>
-
-## Stack
-
-| Layer | Technology |
-|---|---|
-| **Frontend** | Next.js 14 (App Router), Tailwind CSS, shadcn/ui, Recharts, TanStack Query |
-| **Animations** | GSAP + ScrollTrigger, Lenis smooth scroll |
-| **Backend** | Python 3.12, FastAPI, SQLAlchemy (async), Alembic |
-| **Auth** | `python-jose` (JWT), `passlib[bcrypt]` (passwords), custom refresh token flow |
-| **Database** | PostgreSQL 16 via [Neon](https://neon.tech) |
-| **Cache / Queue** | Redis via [Upstash](https://upstash.com) |
-| **Deployment** | [Vercel](https://vercel.com) (frontend + backend), Neon, Upstash |
-| **Tests** | Playwright E2E (frontend), pytest (backend) |
-
-<br/>
-
-## Role & Access Model
-
-Three distinct access levels:
-
-| | Member | Admin | Owner | Super Admin |
-|---|---|---|---|---|
-| View workspace data | ✅ | ✅ | ✅ | ✅ (any) |
-| CRUD servers & alert rules | — | ✅ | ✅ | ✅ (any) |
-| Manage members & invites | — | ✅ | ✅ | ✅ (any) |
-| Change member roles | — | — | ✅ | ✅ (any) |
-| Manage API keys | — | ✅ | ✅ | ✅ (any) |
-| Delete workspace | — | — | ✅ | ✅ (any) |
-| View/manage ALL workspaces & users | — | — | — | ✅ |
-| Impersonate users | — | — | — | ✅ |
-
-<br/>
-
-## Quick Start (Local)
+## Quick Start
 
 **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/)
 
 ```bash
-# 1. Clone the repo
 git clone https://github.com/aniruddhabagal/MCP-Hub.git
 cd MCP-Hub
-
-# 2. Copy env file and fill in secrets
-cp .env.example .env
-# Required: DATABASE_URL, REDIS_URL, SECRET_KEY, JWT_SECRET_KEY, CRON_SECRET
-
-# 3. Start all services (postgres, redis, backend, frontend)
+cp .env.example .env        # fill in DATABASE_URL, REDIS_URL, JWT_SECRET_KEY
 docker-compose up
 ```
 
 | Service | URL |
 |---|---|
-| 🌐 Frontend | http://localhost:3000 |
-| ⚙️ Backend API | http://localhost:8000/api/v1 |
-| 📄 API Docs (Swagger) | http://localhost:8000/docs |
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8000/api/v1 |
+| Swagger docs | http://localhost:8000/docs |
 
-> **No backend?** Click **Try demo mode** on the login page — the full UI runs on rich mock data with no network required.
+Sign up at `/signup` — a personal workspace is created automatically. Set `SUPERADMIN_EMAILS=you@example.com` in `.env` to grant yourself platform admin access.
 
-> **First run:** Sign up at `/signup` — a personal workspace is created automatically. Set `SUPERADMIN_EMAILS=you@example.com` in `.env` to grant yourself super admin access.
+> **No backend?** Click **Try demo mode** on the login page — the full UI runs offline on rich mock data.
 
-<br/>
+---
 
-## Pages
+## Stack
 
-| Page | Access | Description |
-|---|---|---|
-| `/` | Public | Landing page with GSAP scroll animations |
-| `/login` | Public | Email/password login + "Try demo mode" button |
-| `/signup` | Public | Registration — auto-creates personal workspace |
-| `/invite/[token]` | Public | Accept a workspace invitation |
-| `/dashboard` | Member+ | Stats, health overview, recent alerts, top tools |
-| `/servers` | Member+ | Server registry with health status |
-| `/servers/[id]` | Member+ | Health timeline, uptime calendar, **Tool Playground** (browse + test tools), tool calls, alerts |
-| `/tools` | Member+ | Paginated tool call audit log with filters |
-| `/analytics` | Member+ | Top tools, latency histogram, error rates, heatmap |
-| `/alerts` | Member+ | Alert rule management + event history |
-| `/settings` | Admin+ | General, Members, Invites, API Keys tabs |
-| `/admin` | Super Admin | Platform overview — all workspaces, users, global activity |
-| `/admin/workspaces/[id]` | Super Admin | Workspace deep dive — members, impersonate, delete |
-| `/admin/users/[id]` | Super Admin | User deep dive — toggle active/superadmin, impersonate, delete |
-
-<br/>
-
-## Environment Variables
-
-### Backend
-
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | ✅ | Neon asyncpg URL — `postgresql+asyncpg://...?ssl=require` |
-| `REDIS_URL` | ✅ | Upstash Redis URL — `rediss://...` |
-| `SECRET_KEY` | ✅ | Long random string (`openssl rand -hex 32`) |
-| `JWT_SECRET_KEY` | ✅ | Separate secret for signing JWTs (`openssl rand -hex 32`) |
-| `JWT_ALGORITHM` | ☐ | Default: `HS256` |
-| `CRON_SECRET` | ✅ | Bearer token for admin/cron endpoints |
-| `ALLOWED_ORIGINS` | ✅ | Comma-separated CORS origins (your frontend URL) |
-| `SUPERADMIN_EMAILS` | ☐ | Comma-separated emails auto-granted super admin on signup |
-| `APP_ENV` | ☐ | `development` or `production` (default: `development`) |
-| `SLACK_WEBHOOK_URL` | ☐ | Slack incoming webhook for alert notifications |
-| `ALERT_WEBHOOK_URL` | ☐ | Generic HTTP webhook for alert notifications |
-
-### Frontend
-
-| Variable | Required | Description |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | ✅ | Backend base URL — `https://your-backend.vercel.app/api/v1` |
-| `NEXT_PUBLIC_WS_URL` | ✅ | WebSocket URL — `wss://your-backend.vercel.app/ws/dashboard` |
-| `NEXT_PUBLIC_CRON_SECRET` | ✅ | Same as backend `CRON_SECRET` — powers the "Run Probes" button |
-
-<br/>
-
-## API Reference
-
-All REST endpoints are under `/api/v1`. Protected endpoints require `Authorization: Bearer <access_token>` or `X-API-Key: <key>`.
-
-### Auth
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/auth/signup` | Create account — auto-creates personal workspace, returns tokens |
-| `POST` | `/auth/login` | Email/password login, returns access + refresh tokens |
-| `POST` | `/auth/refresh` | Exchange refresh token for new access token |
-| `GET` | `/auth/me` | Current user + workspace list |
-| `POST` | `/auth/switch-workspace` | Get new access token scoped to a different workspace |
-| `POST` | `/auth/accept-invite/{token}` | Accept a workspace invitation |
-
-### Workspaces
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET/POST` | `/workspaces` | List or create workspaces |
-| `PATCH/DELETE` | `/workspaces/{id}` | Update or delete a workspace |
-| `GET` | `/workspaces/{id}/members` | List workspace members |
-| `POST` | `/workspaces/{id}/members/invite` | Send email invitation |
-| `PATCH/DELETE` | `/workspaces/{id}/members/{user_id}` | Change role or remove member |
-| `GET/POST` | `/workspaces/{id}/api-keys` | List or create API keys |
-| `DELETE` | `/workspaces/{id}/api-keys/{key_id}` | Revoke an API key |
-
-### Servers
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/servers` | List workspace servers |
-| `POST` | `/servers` | Register a new server (optional: `auth_type`, `auth_credentials`) |
-| `GET` | `/servers/{id}` | Get server details (`has_credentials` flag — raw credentials never returned) |
-| `PATCH` | `/servers/{id}` | Update server metadata or auth configuration |
-| `DELETE` | `/servers/{id}` | Remove a server |
-| `POST` | `/servers/{id}/probe` | Probe a single server on-demand (uses configured auth) |
-
-### Tool Playground
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| `GET` | `/servers/{id}/tools` | Member+ | Fetch the server's tool list via `tools/list` JSON-RPC — response cached in Redis for 5 min; `cached: true` flag indicates cache hit |
-| `POST` | `/servers/{id}/tools/invoke` | Admin+ | Invoke a tool via `tools/call` — arguments validated, result truncated at 1 MB, call logged to `tool_calls` with `caller_agent="mcphub-playground"` |
-| `DELETE` | `/servers/{id}/tools/cache` | Admin+ | Force-invalidate the cached tool list for a server |
-
-### Health
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/health/checks` | Paginated health check history |
-| `GET` | `/health/summary` | Uptime stats per server |
-
-### Tool Calls
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/tool-calls` | Paginated audit log with filters |
-| `POST` | `/tool-calls` | Direct ingestion (bypass proxy) |
-| `POST` | `/proxy/{server_id}/mcp` | Transparent MCP proxy endpoint |
-
-### Analytics
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/analytics/top-tools` | Top tools by call count |
-| `GET` | `/analytics/error-rates` | Error rates by server/tool |
-| `GET` | `/analytics/latency` | Avg + p95 latency stats |
-| `GET` | `/analytics/volume` | Volume heatmap time buckets |
-
-### Alerts
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/alerts/rules` | List alert rules |
-| `POST` | `/alerts/rules` | Create an alert rule |
-| `PATCH` | `/alerts/rules/{id}` | Update a rule |
-| `DELETE` | `/alerts/rules/{id}` | Delete a rule |
-| `GET` | `/alerts/events` | Alert event history |
-
-### Admin — Cron / On-demand (`Authorization: Bearer CRON_SECRET`)
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/admin/probe-all` | Run health probes on all servers |
-| `POST` | `/admin/evaluate-alerts` | Evaluate all alert rules |
-
-### Super Admin (`is_superadmin` required)
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/admin/overview` | Platform stats — users, workspaces, servers, tool calls, alerts |
-| `GET` | `/admin/workspaces` | All workspaces with member/server counts |
-| `GET/PATCH/DELETE` | `/admin/workspaces/{id}` | Workspace detail, update, or delete |
-| `GET` | `/admin/users` | All users with workspace counts |
-| `GET/PATCH/DELETE` | `/admin/users/{id}` | User detail, update active/superadmin, or delete |
-| `POST` | `/admin/impersonate/{user_id}` | Get an access token scoped to this user |
-| `GET` | `/admin/tool-calls` | All tool calls across all workspaces |
-| `GET` | `/admin/alerts/events` | All alert events across all workspaces |
-| `GET` | `/admin/analytics/global` | Platform-wide call counts, error rate, top tools |
-
-### Real-Time
-| Protocol | Endpoint | Description |
-|---|---|---|
-| `WebSocket` | `/ws/dashboard?token=<jwt>` | Workspace-scoped live status + alert event stream |
-
-<br/>
-
-## Project Structure
-
-```
-MCP-Hub/
-├── backend/
-│   ├── app/
-│   │   ├── main.py              # FastAPI entry point
-│   │   ├── config.py            # Pydantic settings (JWT, superadmin emails)
-│   │   ├── database.py          # SQLAlchemy async engine
-│   │   ├── redis_client.py      # Redis connection pool
-│   │   ├── agents/              # health_prober · alert_evaluator · analytics_aggregator
-│   │   ├── routers/             # auth · workspaces · superadmin · servers · proxy · websocket …
-│   │   ├── models/              # user · workspace · server · health_check · tool_call · alert · analytics
-│   │   ├── schemas/             # Pydantic request/response schemas
-│   │   ├── dependencies/        # get_current_user · require_role · require_superadmin
-│   │   ├── services/            # Business logic layer
-│   │   └── utils/               # security (JWT + bcrypt) · mcp_client · notifiers
-│   ├── alembic/                 # DB migrations (0001_initial · 0002_multi_tenant)
-│   ├── tests/                   # pytest test suite
-│   ├── vercel.json              # Vercel serverless + cron config
-│   └── requirements.txt
-├── frontend/
-│   └── src/
-│       ├── app/                 # Next.js App Router pages
-│       │   ├── page.tsx         # Landing page (/)
-│       │   ├── login/           # Sign in
-│       │   ├── signup/          # Create account
-│       │   ├── invite/[token]/  # Accept workspace invitation
-│       │   ├── dashboard/       # Main dashboard
-│       │   ├── servers/         # Server list + [id] detail
-│       │   ├── tools/           # Tool call audit log
-│       │   ├── analytics/       # Charts + heatmap
-│       │   ├── alerts/          # Alert rules + history
-│       │   ├── settings/        # Workspace settings (admin+)
-│       │   └── admin/           # Platform admin (superadmin)
-│       │       ├── page.tsx     # Overview
-│       │       ├── workspaces/[id]/
-│       │       └── users/[id]/
-│       ├── components/
-│       │   ├── auth/            # LoginForm · SignupForm
-│       │   ├── admin/           # PlatformStatsCards · AllWorkspacesTable · AllUsersTable · GlobalActivityFeed
-│       │   ├── workspace/       # WorkspaceGeneralSettings · MemberList · InviteForm · PendingInvites · ApiKeyManager
-│       │   ├── layout/          # Sidebar · LayoutShell · WorkspaceSwitcher · UserMenu · DemoBanner · WebSocketProvider
-│       │   ├── dashboard/       # StatsCards · HealthOverviewChart · RecentAlerts · TopToolsWidget
-│       │   ├── servers/         # ServerTable · HealthTimeline · UptimeCalendar · RegisterServerModal · ToolsTab · ToolCard · ToolPlayground · SchemaForm
-│       │   ├── tools/           # ToolCallTable · ToolCallDetail
-│       │   ├── analytics/       # TopToolsChart · LatencyHistogram · ErrorRatesChart · UsageHeatmap
-│       │   ├── alerts/          # AlertRuleForm · AlertRulesTable · AlertHistoryTable
-│       │   └── ui/              # shadcn/ui primitives
-│       └── lib/
-│           ├── auth.ts          # AuthProvider + useAuth() hook
-│           ├── token-store.ts   # Access token singleton (avoids circular deps)
-│           ├── api.ts           # Typed API client with auth injection + 401 refresh
-│           ├── types.ts         # All TypeScript interfaces
-│           ├── demo-mode.ts     # Demo mode singleton + route matcher
-│           ├── demo-data.ts     # Rich mock dataset (servers, users, workspaces, admin)
-│           ├── websocket.ts     # WebSocket hook with JWT auth + reconnect
-│           └── hooks.ts / utils.ts
-├── e2e/                         # Playwright test suites
-│   ├── auth.spec.ts             # Login/signup pages, demo mode bypass
-│   ├── admin.spec.ts            # Admin overview, workspace/user deep dives, settings
-│   ├── dashboard.spec.ts
-│   ├── servers.spec.ts
-│   ├── tools.spec.ts
-│   └── alerts.spec.ts
-├── docker-compose.yml
-├── .env.example
-└── CLAUDE.md                    # Project spec + progress tracker
-```
-
-<br/>
-
-## Database Schema
-
-| Table | Purpose |
+| Layer | Technology |
 |---|---|
-| `users` | User accounts — email, bcrypt password hash, superadmin flag |
-| `workspaces` | Team workspaces — name, slug |
-| `workspace_members` | User ↔ workspace join — role (owner/admin/member) |
-| `workspace_invites` | Pending email invitations with expiring token |
-| `api_keys` | Hashed API keys for programmatic access |
-| `mcp_servers` | Server registry — endpoint, owner, tags, status, auth type + credentials (JSONB) *(workspace-scoped)* |
-| `health_checks` | Time-series probe results — latency, status, error *(workspace-scoped)* |
-| `tool_calls` | Full audit log of every proxied tool invocation *(workspace-scoped)* |
-| `alert_rules` | Configurable threshold conditions per server or global *(workspace-scoped)* |
-| `alert_events` | Fired/resolved alert history *(workspace-scoped)* |
-| `analytics_snapshots` | Hourly pre-aggregated metrics — avoids costly raw-row aggregation *(workspace-scoped)* |
+| Frontend | Next.js 14 (App Router), Tailwind CSS, shadcn/ui, Recharts, TanStack Query |
+| Animations | GSAP + ScrollTrigger, Lenis smooth scroll |
+| Backend | Python 3.12, FastAPI, SQLAlchemy (async), Alembic |
+| Auth | Custom JWT (access + refresh), API key auth — no third-party auth services |
+| Database | PostgreSQL 16 via [Neon](https://neon.tech) |
+| Cache / Queue | Redis via [Upstash](https://upstash.com) |
+| Deployment | [Vercel](https://vercel.com) (frontend + backend), Neon, Upstash |
+| Tests | Playwright E2E, pytest |
 
-<br/>
+---
 
-## Tests
+## Documentation
 
-```bash
-# E2E tests (Playwright) — runs against the live dev server
-cd frontend
-npx playwright test
+Full documentation is available at `/docs` in the running app.
 
-# Backend tests (pytest)
-cd backend
-pytest
-```
+For local development setup, deployment instructions, architecture deep-dives, and contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Playwright tests cover auth pages, demo mode bypass, admin overview, workspace/user deep dives, settings, dashboard, server registry, tool calls, analytics, and alerts.
+---
 
-<br/>
+## Deployment
 
-## Deployment (Vercel + Neon + Upstash)
+1. **[Neon](https://neon.tech)** — Create a project, copy the pooled asyncpg connection string
+2. **[Upstash](https://upstash.com)** — Create a Redis database, copy the `rediss://` URL
+3. **Vercel (Backend)** — Import repo, set root to `backend/`, add env vars, deploy
+4. **Vercel (Frontend)** — Import repo, set root to `frontend/`, set `NEXT_PUBLIC_API_URL`, deploy
 
-1. **[Neon](https://neon.tech)** → Create a project, copy the pooled asyncpg connection string
-2. **[Upstash](https://upstash.com)** → Create a Redis database with TLS, copy the `rediss://` URL
-3. **Vercel Backend** → Import repo, root directory `backend`, add all env vars, deploy
-4. **Vercel Frontend** → Import repo, root directory `frontend`, set `NEXT_PUBLIC_API_URL`, deploy
-5. Set `SUPERADMIN_EMAILS` to your email — you'll get platform admin access on first signup
-
-For full steps see **[Deployment.md](./Deployment.md)**.
-
-<br/>
+---
 
 ## Roadmap
 
 - [x] Server registry + health monitoring
-- [x] Transparent MCP proxy + tool call audit log
-- [x] Analytics (top tools, latency, error rates, heatmap)
+- [x] Transparent MCP proxy + full audit log
+- [x] Analytics — top tools, latency, error rates, heatmap
 - [x] Alert system with Slack/webhook delivery
 - [x] Real-time WebSocket dashboard
-- [x] Landing page with GSAP/Lenis animations
 - [x] Demo mode — offline with full mock data
-- [x] Multi-tenant team workspaces (owner / admin / member roles)
+- [x] Multi-tenant workspaces with role-based access control
 - [x] Custom JWT auth with refresh token flow
 - [x] Super admin platform dashboard with impersonation
-- [x] Per-server auth configuration (bearer token, API key header, HTTP basic)
-- [x] Tool Playground — dynamic `tools/list` discovery + interactive tool invocation with audit logging
-- [ ] MCP server auto-discovery (scan local network / Docker)
+- [x] Per-server auth configuration
+- [x] Tool Playground — interactive tool discovery and invocation
+- [x] Documentation site (Fumadocs)
+- [ ] MCP server auto-discovery (local network / Docker)
 - [ ] Token cost estimation per tool call
-- [ ] GitHub Actions integration for CI health checks
 - [ ] Exportable audit reports (CSV / JSON)
-
-<br/>
+- [ ] GitHub Actions integration for CI health checks
 
 ---
 
-<p align="center">
-  Built as the ops layer the MCP ecosystem is missing.<br/>
-  <em>Grafana for MCP — discovery · health · audit · analytics · multi-tenant in a single pane.</em>
-</p>
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, architecture notes, and the pull request process.
+
+---
+
+## License
+
+[MIT](LICENSE)
+
+---
+
+<p align="center"><em>Grafana for MCP — discovery · health · audit · analytics · multi-tenant in a single pane.</em></p>

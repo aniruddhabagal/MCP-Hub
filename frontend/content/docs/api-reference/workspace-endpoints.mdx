@@ -1,0 +1,97 @@
+---
+title: Workspace Endpoints
+description: CRUD for workspaces, member management, invites, and API keys.
+---
+
+# Workspace Endpoints
+
+Base path: `/api/v1/workspaces`
+
+All endpoints require JWT auth. Mutation endpoints require admin or owner role.
+
+## GET /workspaces
+
+List workspaces the current user belongs to.
+
+## POST /workspaces
+
+Create a new org workspace.
+
+```json
+{ "name": "My Team", "slug": "my-team" }
+```
+
+## GET /workspaces/\{id\}
+
+Get workspace details.
+
+## PATCH /workspaces/\{id\}
+
+Update workspace name or slug. Requires admin+.
+
+## DELETE /workspaces/\{id\}
+
+Delete workspace and all its data. Requires owner.
+
+---
+
+## Members
+
+### GET /workspaces/\{id\}/members
+
+List workspace members with their roles.
+
+### POST /workspaces/\{id\}/members/invite
+
+Send an invitation email. Requires admin+.
+
+```json
+{
+  "email": "colleague@example.com",
+  "role": "member"
+}
+```
+
+### PATCH /workspaces/\{id\}/members/\{user_id\}
+
+Change a member's role. Requires owner.
+
+```json
+{ "role": "admin" }
+```
+
+### DELETE /workspaces/\{id\}/members/\{user_id\}
+
+Remove a member from the workspace. Requires owner (or admin removing a member).
+
+---
+
+## Invites
+
+### GET /workspaces/\{id\}/invites
+
+List pending invitations.
+
+### DELETE /workspaces/\{id\}/invites/\{invite_id\}
+
+Revoke a pending invitation. Requires admin+.
+
+---
+
+## API Keys
+
+### GET /workspaces/\{id\}/api-keys
+
+List API keys (names and creation dates — key values not returned after creation).
+
+### POST /workspaces/\{id\}/api-keys
+
+Create a new API key. Returns the raw key value **once only**.
+
+```json
+{ "name": "ci-pipeline" }
+```
+
+### DELETE /workspaces/\{id\}/api-keys/\{key_id\}
+
+Revoke an API key. Requires admin+.

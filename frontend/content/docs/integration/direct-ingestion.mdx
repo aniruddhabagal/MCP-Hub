@@ -1,0 +1,79 @@
+---
+title: Direct Ingestion
+description: Log tool calls to MCPHub without routing through the proxy — for agents that call MCP servers directly.
+---
+
+# Direct Ingestion
+
+The proxy is the easiest way to log tool calls, but some agents connect directly to MCP servers and can't be rerouted. For these cases, use the **direct ingestion endpoint** to push tool call records to MCPHub manually.
+
+## When to use direct ingestion
+
+Use it when:
+- Your agent manages its own MCP connections and you can't change the transport layer
+- You want to log tool calls from a legacy system that predates MCPHub
+- You're running MCP servers in an environment where proxying isn't feasible (e.g. local dev tools, sandboxed environments)
+
+## Endpoint
+
+```
+POST /api/v1/tool-calls
+```
+
+Requires JWT or API key auth.
+
+## Request schema
+
+```json
+{
+  "server_id": "uuid-of-registered-server",
+  "tool_name": "read_file",
+  "caller_agent": "my-agent-v2",
+  "input_tokens": 120,
+  "output_tokens": 340,
+  "duration_ms": 245,
+  "status": "success",
+  "error_message": null,
+  "output_size_bytes": 1380
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `server_id` | UUID | yes | Must be a server registered in your workspace |
+| `tool_name` | string | yes | Name of the tool that was called |
+| `caller_agent` | string | no | Identifier for the calling agent or script |
+| `input_tokens` | int | no | Estimated input tokens consumed |
+| `output_tokens` | int | no | Estimated output tokens produced |
+| `duration_ms` | int | no | Wall-clock duration of the tool call |
+| `status` | string | yes | `"success"` or `"error"` |
+| `error_message` | string | no | Error detail if status is `"error"` |
+| `output_size_bytes` | int | no | Size of the tool response payload |
+
+## Example (Python)
+
+```python
+import httpx
+
+httpx.post(
+    "https://mcphub.aniruddha.fyi/api/v1/tool-calls",
+    headers={"X-API-Key": "mhk_your_key"},
+    json={
+        "server_id": "your-server-uuid",
+        "tool_name": "search_files",
+        "caller_agent": "my-pipeline",
+        "duration_ms": 312,
+        "status": "success",
+        "output_size_bytes": 4096,
+    },
+)
+```
+
+## What you get
+
+Directly ingested tool calls appear in:
+- **Tool Calls** audit log (same as proxy-logged calls)
+- **Analytics** — top tools, volume heatmap, error rates
+- **Alert evaluation** — alert rules fire on ingested data too
+
+The only difference from proxy logging is that directly ingested calls don't have an MCPHub-generated request ID, so there's no link back to the raw request.

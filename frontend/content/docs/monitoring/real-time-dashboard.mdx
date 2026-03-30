@@ -1,0 +1,42 @@
+---
+title: Real-Time Dashboard
+description: Live status updates via WebSocket — status dots, alert toasts, and auto-refreshing stats.
+---
+
+# Real-Time Dashboard
+
+MCPHub uses a WebSocket connection to push live updates to the dashboard. You don't need to refresh the page to see changes.
+
+## What updates in real time
+
+- **Server status dots** — green/red/yellow dots next to each server update immediately after a probe
+- **Alert toasts** — when an alert fires, a toast notification appears in the corner
+- **Stats cards** — the dashboard's summary numbers (total tool calls, active servers) refresh automatically
+
+## WebSocket connection status
+
+The bottom of the sidebar shows the connection state:
+
+- **Live** (green dot) — connected and receiving updates
+- **Connecting** (pulsing) — establishing connection or reconnecting
+- **Offline** (grey) — disconnected, showing last known data
+
+The WebSocket reconnects automatically if the connection drops.
+
+## Authentication
+
+The WebSocket connection is authenticated with your JWT token passed as a query parameter:
+
+```
+wss://mcphub.aniruddha.fyi/ws/dashboard?token=<jwt>
+```
+
+This is handled automatically by the frontend — you don't need to do anything manually.
+
+## Workspace isolation
+
+Each WebSocket connection is subscribed to a workspace-specific Redis pub/sub channel. Events from other workspaces are never sent to your connection, even if you're connected at the same time as users from other workspaces.
+
+## Demo mode
+
+In demo mode, there is no WebSocket connection. Status dots and alerts are simulated from the mock dataset and don't update live.

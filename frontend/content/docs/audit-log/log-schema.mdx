@@ -1,0 +1,46 @@
+---
+title: Log Schema
+description: Fields captured for every tool call in the audit log.
+---
+
+# Log Schema
+
+Every tool call record in the `tool_calls` table has these fields:
+
+## Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Unique identifier for this tool call |
+| `workspace_id` | UUID | Workspace this call belongs to |
+| `server_id` | UUID | The MCP server that handled the call |
+| `tool_name` | string | Name of the tool invoked (e.g. `read_file`) |
+| `caller_agent` | string | Identifier of the calling agent/script. Set to `"mcphub-playground"` for playground invocations |
+| `status` | string | `"success"` or `"error"` |
+| `error_message` | string \| null | Error detail if status is `"error"` |
+| `duration_ms` | int \| null | Wall-clock duration of the tool call in milliseconds |
+| `input_tokens` | int \| null | Input token count (if provided by caller) |
+| `output_tokens` | int \| null | Output token count (if provided by caller) |
+| `output_size_bytes` | int \| null | Response payload size in bytes |
+| `created_at` | timestamp | When the tool call was recorded (UTC) |
+
+## Token fields
+
+`input_tokens` and `output_tokens` are optional — they're only populated when:
+- The calling agent provides them in a direct ingestion request
+- The proxy can extract them from the MCP response metadata
+
+These fields power the cost estimator in Analytics.
+
+## caller_agent values
+
+Common values you'll see:
+
+| Value | Source |
+|-------|--------|
+| `"mcphub-playground"` | Tool Playground invocations |
+| `"claude-desktop"` | Claude Desktop via proxy |
+| `"ci-pipeline"` | Your CI scripts (set this yourself in direct ingestion) |
+| `null` | Not provided |
+
+Set `caller_agent` in direct ingestion requests to make the audit log more useful for attribution.

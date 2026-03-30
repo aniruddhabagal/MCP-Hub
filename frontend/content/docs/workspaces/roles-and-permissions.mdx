@@ -1,0 +1,38 @@
+---
+title: Roles and Permissions
+description: Member, Admin, and Owner roles — what each can do in a workspace.
+---
+
+# Roles and Permissions
+
+MCPHub has three workspace roles. Assign the minimum role required for each team member's responsibilities.
+
+## Role overview
+
+| Action | Member | Admin | Owner |
+|--------|--------|-------|-------|
+| View dashboard, servers, tool calls, analytics, alerts | ✓ | ✓ | ✓ |
+| Register/edit/delete servers | — | ✓ | ✓ |
+| Trigger health probes | — | ✓ | ✓ |
+| Create/delete alert rules | — | ✓ | ✓ |
+| Manage members and invites | — | ✓ | ✓ |
+| Create/revoke API keys | — | ✓ | ✓ |
+| Edit workspace name/slug | — | ✓ | ✓ |
+| Change member roles | — | — | ✓ |
+| Delete workspace | — | — | ✓ |
+
+## Member
+
+Read-only access. Can view all data in the workspace but cannot make changes. Good for stakeholders who need visibility without write access.
+
+## Admin
+
+Full operational access — can manage servers, alert rules, members, and API keys. Cannot promote members to owner or delete the workspace. Good for team leads and engineers who operate the workspace day-to-day.
+
+## Owner
+
+Full control. There is always exactly one owner per workspace (the creator). The owner can transfer ownership by changing another member's role to owner, which downgrades the current owner to admin.
+
+## Changing a member's role
+
+Go to **Settings → Members**. Owners can change the role of any member. Admins cannot change roles.

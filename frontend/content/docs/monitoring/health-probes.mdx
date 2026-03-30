@@ -1,0 +1,59 @@
+---
+title: Health Probes
+description: How MCPHub probes your MCP servers and determines their health status.
+---
+
+# Health Probes
+
+A health probe is a lightweight request MCPHub sends to your MCP server to check if it's responding correctly.
+
+## What a probe does
+
+MCPHub sends an MCP `initialize` JSON-RPC call to the server endpoint:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {},
+    "clientInfo": {"name": "mcphub-prober", "version": "1.0"}
+  },
+  "id": 1
+}
+```
+
+The probe records:
+- **Latency** — time from request to first response byte (ms)
+- **HTTP status** — 2xx is considered healthy
+- **Error** — any connection error or non-2xx response
+
+If the server requires auth, the probe uses the configured credentials automatically.
+
+## Status thresholds
+
+| Status | Condition |
+|--------|-----------|
+| `healthy` | 2xx response within timeout |
+| `degraded` | Slow response (>2000ms) but still responding |
+| `down` | Connection refused, timeout, or non-2xx |
+| `unknown` | No probes run yet |
+
+## Triggering probes
+
+**On demand — single server:**
+1. Open the server detail page
+2. Click **Probe Now**
+3. Status updates within a few seconds
+
+**On demand — all servers:**
+1. Go to the **Servers** page
+2. Click **Run All Probes**
+3. All servers are probed in parallel; status updates as results come in
+
+**Automated (once/day):** MCPHub's Vercel Cron runs daily at 02:00 UTC and probes all servers across all workspaces.
+
+## Probe history
+
+Every probe result is stored in the `health_checks` table. You can see the last 30 days of results in the server detail page's health timeline.

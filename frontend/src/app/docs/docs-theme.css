@@ -1,0 +1,45 @@
+/* Fumadocs theme overrides — maps MCPHub Forge Dark palette to fd- prefixed variables */
+
+:root {
+  /* Backgrounds */
+  --fd-background: 240 12% 5%;
+  --fd-foreground: 240 10% 92%;
+
+  --fd-card: 240 10% 11%;
+  --fd-card-foreground: 240 10% 92%;
+
+  --fd-popover: 240 10% 11%;
+  --fd-popover-foreground: 240 10% 92%;
+
+  /* Amber primary */
+  --fd-primary: 38 92% 50%;
+  --fd-primary-foreground: 240 12% 5%;
+
+  --fd-secondary: 240 10% 14%;
+  --fd-secondary-foreground: 240 10% 75%;
+
+  --fd-muted: 240 10% 14%;
+  --fd-muted-foreground: 240 8% 52%;
+
+  --fd-accent: 38 92% 50%;
+  --fd-accent-foreground: 240 12% 5%;
+
+  --fd-destructive: 0 78% 58%;
+  --fd-destructive-foreground: 240 10% 92%;
+
+  --fd-border: 240 10% 18%;
+  --fd-input: 240 10% 18%;
+  --fd-ring: 38 92% 50%;
+
+  --fd-radius: 0.375rem;
+
+  /* Sidebar */
+  --fd-sidebar-background: 240 12% 7%;
+  --fd-sidebar-foreground: 240 10% 72%;
+  --fd-sidebar-accent: 240 10% 14%;
+  --fd-sidebar-accent-foreground: 240 10% 92%;
+  --fd-sidebar-primary: 38 92% 50%;
+  --fd-sidebar-primary-foreground: 240 12% 5%;
+  --fd-sidebar-border: 240 10% 14%;
+  --fd-sidebar-ring: 38 92% 50%;
+}
