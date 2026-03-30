@@ -29,7 +29,6 @@ MCPHub solves this with a single pane of glass across your entire MCP fleet.
 - **Alert System** — Threshold-based rules on latency, error rate, or availability with Slack and webhook delivery
 - **Real-Time Dashboard** — WebSocket push for live server status dots and alert toasts
 - **Multi-Tenant Workspaces** — Owner / admin / member roles, email invitations, API keys, workspace switcher
-- **Super Admin** — Platform-wide visibility across all workspaces and users, with impersonation
 - **Demo Mode** — Full offline experience on rich mock data — no backend required
 
 ---
@@ -51,7 +50,7 @@ docker-compose up
 | Backend API | http://localhost:8000/api/v1 |
 | Swagger docs | http://localhost:8000/docs |
 
-Sign up at `/signup` — a personal workspace is created automatically. Set `SUPERADMIN_EMAILS=you@example.com` in `.env` to grant yourself platform admin access.
+Sign up at `/signup` — a personal workspace is created automatically.
 
 > **No backend?** Click **Try demo mode** on the login page — the full UI runs offline on rich mock data.
 
@@ -99,7 +98,6 @@ For local development setup, deployment instructions, architecture deep-dives, a
 - [x] Demo mode — offline with full mock data
 - [x] Multi-tenant workspaces with role-based access control
 - [x] Custom JWT auth with refresh token flow
-- [x] Super admin platform dashboard with impersonation
 - [x] Per-server auth configuration
 - [x] Tool Playground — interactive tool discovery and invocation
 - [x] Documentation site (Fumadocs)

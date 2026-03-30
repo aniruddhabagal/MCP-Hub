@@ -36,7 +36,7 @@ This means analytics queries are aggregation over at most ~720 rows (30 days × 
 
 The analytics aggregator runs:
 - **Daily at 02:00 UTC** via Vercel Cron — processes the last 24 hours of tool calls for all workspaces
-- **On-demand** via `POST /api/v1/admin/evaluate-alerts` (super admin only)
+- **On-demand** via `POST /api/v1/admin/evaluate-alerts` (requires `CRON_SECRET` bearer token)
 
 This means analytics data is at most ~24 hours behind for the current day. Yesterday's data is fully aggregated.
 

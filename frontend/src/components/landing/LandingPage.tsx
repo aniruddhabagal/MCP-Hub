@@ -17,7 +17,6 @@ import {
   FlaskConical,
   Shield,
   Key,
-  Crown,
   UserCheck,
 } from 'lucide-react'
 
@@ -120,15 +119,6 @@ const roles = [
     bg: 'bg-primary/10',
     border: 'border-primary/20',
     perms: ['Register & edit servers', 'Invoke tools in Playground', 'Manage members & invites', 'Create API keys'],
-  },
-  {
-    icon: Crown,
-    level: 'L3',
-    name: 'Super Admin',
-    color: 'text-violet-400',
-    bg: 'bg-violet-400/10',
-    border: 'border-violet-400/20',
-    perms: ['Platform-wide visibility', 'Manage all workspaces & users', 'Cross-workspace analytics', 'Impersonate users'],
   },
 ]
 
@@ -448,7 +438,7 @@ export function LandingPage() {
             {[
               { value: '∞', label: 'Servers Supported', sub: 'unlimited' },
               { value: '100%', label: 'Tool Calls Captured', sub: 'via transparent proxy' },
-              { value: '3', label: 'Access Levels', sub: 'member · admin · super admin' },
+              { value: '3', label: 'Access Levels', sub: 'member · admin · owner' },
               { value: '<1s', label: 'Real-time Latency', sub: 'WebSocket push' },
             ].map((stat) => (
               <div key={stat.label} className="stagger-child">
@@ -553,7 +543,7 @@ export function LandingPage() {
             Built for teams.
           </h2>
           <p className="reveal-up text-base text-muted-foreground max-w-xl leading-relaxed mb-16">
-            Full workspace isolation with three distinct access levels. Invite teammates, manage API keys,
+            Full workspace isolation with granular access levels. Invite teammates, manage API keys,
             and keep every team&apos;s data strictly scoped — all the way down to the Redis cache prefix.
           </p>
 
